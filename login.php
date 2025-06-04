@@ -2,6 +2,11 @@
 session_start();
 include 'includes/db.php';
 
+// ✅ Show logout success message if redirected from logout
+if (isset($_GET['message']) && $_GET['message'] === 'loggedout') {
+    echo "<p style='color: green;'>✅ You have been logged out successfully.</p>";
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
     $password = $_POST['password'];
@@ -24,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         exit();
     } else {
-        echo "❌ Invalid email or password!";
+        echo "<p style='color: red;'>❌ Invalid email or password!</p>";
     }
 }
 ?>

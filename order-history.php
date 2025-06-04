@@ -49,6 +49,10 @@ $result = mysqli_stmt_get_result($stmt);
 ?>
 
 <h2>📋 Order History - <?php echo htmlspecialchars($driver_name); ?></h2>
+<!-- Back Button After Table -->
+<div style="margin-top: 25px; text-align: right;">
+    <a href="dashboard-driver.php" style="text-decoration:none; background:#6c757d; color:white; padding:8px 12px; border-radius:5px;">⬅️ Back to Dashboard</a>
+</div>
 
 <form method="GET">
     <label>Filter by:</label>
