@@ -8,7 +8,7 @@ if (isset($_GET['message']) && $_GET['message'] === 'loggedout') {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST['email'];
+    $email = trim($_POST['email']);
     $password = $_POST['password'];
 
     $sql = "SELECT * FROM users WHERE email = ?";
@@ -21,11 +21,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($user && password_verify($password, $user['password'])) {
         $_SESSION['user'] = $user;
 
-        // Redirect by role
+        // ✅ Redirect based on role
         if ($user['role'] === 'DRIVER') {
             header("Location: dashboard-driver.php");
         } elseif ($user['role'] === 'MANAGER') {
-            header("Location: dashboard-manager.php");
+            header("Location: manager-dashboard/dashboard-manager.php");
         }
         exit();
     } else {
@@ -34,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 ?>
 
-<h2>Login</h2>
+<h2>🔐 Login</h2>
 <form method="POST" action="">
   <input type="email" name="email" placeholder="Email" required><br><br>
   <input type="password" name="password" placeholder="Password" required><br><br>
