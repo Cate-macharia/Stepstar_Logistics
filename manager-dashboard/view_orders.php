@@ -7,7 +7,6 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
     exit();
 }
 
-// Optional: date filter
 $filter = $_GET['filter'] ?? 'all';
 $from_date = $_GET['from'] ?? '';
 $to_date = $_GET['to'] ?? '';
@@ -27,9 +26,17 @@ $sql = "SELECT * FROM shipments WHERE $whereClause ORDER BY pickup_date DESC";
 $result = mysqli_query($conn, $sql);
 ?>
 
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Orders</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
 <h2>📋 All Orders</h2>
 
-<form method="GET">
+<form method="GET" style="margin-bottom: 20px;">
     <label>Filter: </label>
     <select name="filter" onchange="toggleRange(this.value)">
         <option value="all" <?= $filter == 'all' ? 'selected' : '' ?>>All</option>
@@ -39,40 +46,42 @@ $result = mysqli_query($conn, $sql);
         <option value="range" <?= $filter == 'range' ? 'selected' : '' ?>>Date Range</option>
     </select>
 
-    <div id="range" style="<?= $filter == 'range' ? '' : 'display:none;' ?>">
+    <span id="range" style="<?= $filter == 'range' ? '' : 'display:none;' ?>">
         From: <input type="date" name="from" value="<?= $from_date ?>">
         To: <input type="date" name="to" value="<?= $to_date ?>">
-    </div>
+    </span>
 
     <button type="submit">🔍 Apply</button>
 </form>
 
-<table border="1" cellpadding="8" cellspacing="0" style="margin-top: 20px; width: 100%;">
+<table border="1" cellpadding="10" cellspacing="0" width="100%">
     <tr>
         <th>Date</th>
         <th>Shipment #</th>
         <th>Driver ID</th>
-        <th>From → To</th>
+        <th>Customer</th>
+        <th>Route</th>
         <th>Vehicle</th>
         <th>Status</th>
-        <th>✅ Verified</th>
-        <th>🛠 Edit</th>
-        <th>🧾 Invoice</th>
+        <th>✅ Verify</th>
+        <th>✏️ Edit</th>
+        <th>📄 Invoice</th>
     </tr>
 
     <?php if (mysqli_num_rows($result) == 0): ?>
-        <tr><td colspan="9" style="color:red;">No orders found.</td></tr>
+        <tr><td colspan="10" style="color:red;">No orders found.</td></tr>
     <?php else: ?>
         <?php while ($row = mysqli_fetch_assoc($result)): ?>
         <tr>
-            <td><?= $row['pickup_date'] ?></td>
-            <td><?= $row['shipment_number'] ?></td>
-            <td><?= $row['driver_id'] ?></td>
-            <td><?= $row['from_location'] ?> → <?= $row['to_location'] ?></td>
-            <td><?= $row['vehicle_reg'] ?? 'N/A' ?></td>
-            <td><?= $row['status'] ?></td>
+            <td><?= htmlspecialchars($row['pickup_date']) ?></td>
+            <td><?= htmlspecialchars($row['shipment_number']) ?></td>
+            <td><?= htmlspecialchars($row['driver_id']) ?></td>
+            <td><?= htmlspecialchars($row['customer_source']) ?></td>
+            <td><?= htmlspecialchars($row['from_location']) ?> → <?= htmlspecialchars($row['to_location']) ?></td>
+            <td><?= htmlspecialchars($row['vehicle_reg']) ?: 'N/A' ?></td>
+            <td><?= htmlspecialchars($row['status']) ?></td>
             <td>
-                <form method="POST" action="verify_order.php" style="display:inline;">
+                <form method="POST" action="verify_order.php">
                     <input type="hidden" name="shipment_id" value="<?= $row['id'] ?>">
                     <input type="checkbox" name="verified" onchange="this.form.submit()" />
                 </form>
@@ -93,3 +102,6 @@ function toggleRange(value) {
     document.getElementById('range').style.display = value === 'range' ? 'inline' : 'none';
 }
 </script>
+
+</body>
+</html>
