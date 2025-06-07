@@ -29,6 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <select name="role" required>
     <option value="DRIVER">Driver</option>
     <option value="MANAGER">Manager</option>
+    <option value="ADMIN">ADMIN</option>
   </select><br><br>
   <button type="submit">Register</button>
 </form>

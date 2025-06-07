@@ -7,8 +7,8 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
     exit();
 }
 
-// Fetch current rates
-$rates = mysqli_query($conn, "SELECT * FROM rates ORDER BY from_location, to_location");
+// Fetch from zone_rates table
+$rates = mysqli_query($conn, "SELECT * FROM zone_rates ORDER BY zone ASC");
 ?>
 
 <!DOCTYPE html>
@@ -62,20 +62,22 @@ $rates = mysqli_query($conn, "SELECT * FROM rates ORDER BY from_location, to_loc
                 <button type="submit">📁 Upload & Import</button>
             </form>
 
-            <h2>📃 Existing Rates</h2>
+            <h2>📃 Existing Zone Rates</h2>
             <table border="1" cellpadding="10" cellspacing="0" style="width: 100%;">
                 <tr>
-                    <th>From</th>
-                    <th>To</th>
-                    <th>Distance (km)</th>
+                    <th>Zone</th>
+                    <th>Distance (KM)</th>
                     <th>Rate (KES/ton)</th>
+                    <th>VAT</th>
+                    <th>Total Rate (KES)</th>
                 </tr>
                 <?php while ($row = mysqli_fetch_assoc($rates)): ?>
                     <tr>
-                        <td><?= htmlspecialchars($row['from_location']) ?></td>
-                        <td><?= htmlspecialchars($row['to_location']) ?></td>
-                        <td><?= htmlspecialchars($row['distance_km']) ?></td>
-                        <td><?= number_format($row['rate_per_ton'], 2) ?></td>
+                        <td><?= htmlspecialchars($row['zone']) ?></td>
+                        <td><?= htmlspecialchars($row['distance']) ?></td>
+                        <td><?= number_format($row['rate'], 2) ?></td>
+                        <td><?= number_format($row['vat'], 2) ?></td>
+                        <td><?= number_format($row['total_rate'], 2) ?></td>
                     </tr>
                 <?php endwhile; ?>
             </table>

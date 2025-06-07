@@ -20,14 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $to_location = $_POST['to_location'][$i];
         $vehicle_reg = $_POST['vehicle_reg'][$i];
         $net_weight = $_POST['net_weight'][$i];
-        $distance_km = isset($_POST['distance_km'][$i]) ? $_POST['distance_km'][$i] : null;
+        $distance_km = trim($_POST['distance_km'][$i]);
 
-        // Initialize base rate and VAT
         $base_rate = 0;
         $vat_percent = 16.00;
 
-        // Check if rate exists in the database
-        $rate_sql = "SELECT base_rate, vat_percent FROM rates WHERE from_location = ? AND to_location = ? LIMIT 1";
+        $rate_sql = "SELECT rate FROM zone_rates WHERE zone = ? AND distance LIKE CONCAT('%', ?, '%') LIMIT 1";
         $rate_stmt = mysqli_prepare($conn, $rate_sql);
         mysqli_stmt_bind_param($rate_stmt, "ss", $from_location, $to_location);
         mysqli_stmt_execute($rate_stmt);
@@ -35,44 +33,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rate_data = mysqli_fetch_assoc($rate_result);
 
         if ($rate_data) {
-            // Use existing rate from the database
-            $base_rate = $rate_data['base_rate'];
-            $vat_percent = $rate_data['vat_percent'];
-            $rate_with_vat = $base_rate * (1 + $vat_percent / 100);
+            $base_rate = $rate_data['rate'];
         } else {
-            // If rate not found, ensure distance is provided
             if (empty($distance_km)) {
-                die("Distance is required when rate is not found in the database.");
+                die("Distance is required when rate is not found.");
             }
 
-            // Determine base rate per tonne based on distance
-            if ($distance_km <= 15) {
-                $base_rate = 728.75;
-            } elseif ($distance_km <= 29) {
-                $base_rate = 726.43;
-            } elseif ($distance_km <= 49) {
-                $base_rate = 725.00;
-            } elseif ($distance_km <= 69) {
-                $base_rate = 723.50;
-            } elseif ($distance_km <= 89) {
-                $base_rate = 722.00;
-            } elseif ($distance_km <= 109) {
-                $base_rate = 720.50;
-            } elseif ($distance_km <= 129) {
-                $base_rate = 719.00;
-            } elseif ($distance_km <= 149) {
-                $base_rate = 717.50;
-            } elseif ($distance_km <= 169) {
-                $base_rate = 716.00;
-            } elseif ($distance_km <= 189) {
-                $base_rate = 714.50;
-            } else {
-                $base_rate = 713.00;
-            }
-
-            $rate_with_vat = $base_rate * (1 + $vat_percent / 100);
+            $distance_value = (float) $distance_km;
+            if ($distance_value <= 15) $base_rate = 728.75;
+            elseif ($distance_value <= 29) $base_rate = 726.43;
+            elseif ($distance_value <= 49) $base_rate = 725.00;
+            elseif ($distance_value <= 69) $base_rate = 723.50;
+            elseif ($distance_value <= 89) $base_rate = 722.00;
+            elseif ($distance_value <= 109) $base_rate = 720.50;
+            elseif ($distance_value <= 129) $base_rate = 719.00;
+            elseif ($distance_value <= 149) $base_rate = 717.50;
+            elseif ($distance_value <= 169) $base_rate = 716.00;
+            elseif ($distance_value <= 189) $base_rate = 714.50;
+            else $base_rate = 713.00;
         }
 
+        $rate_with_vat = $base_rate * (1 + $vat_percent / 100);
         $amount = $net_weight * $rate_with_vat;
         $status = 'Pending';
 
@@ -100,11 +81,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Customer Source: <input type="text" name="customer_source[]" required><br>
                 Date: <input type="date" name="shipment_date[]" required><br>
                 Shipment Number: <input type="text" name="shipment_number[]" required><br>
-                From: <input type="text" name="from_location[]" required>
-                To: <input type="text" name="to_location[]" required><br>
+                From: <input type="text" name="from_location[]" class="from" required>
+                To: <input type="text" name="to_location[]" class="to" required>
+                <button type="button" onclick="searchRate(this)">🔍 Search Rate</button><br>
                 Vehicle Reg: <input type="text" name="vehicle_reg[]" required><br>
                 Net Weight (tonnes): <input type="number" step="0.01" name="net_weight[]" required><br>
-                Distance (KM): <input type="number" step="0.1" name="distance_km[]" placeholder="Enter if rate not found" ><br><br>
+                Distance (KM): <input type="text" name="distance_km[]" class="distance" placeholder="Enter if rate not found"><br><br>
             </div>
         </div>
         <button type="button" onclick="addEntry()">➕ Add Another Delivery</button><br><br>
@@ -121,12 +103,32 @@ function addEntry() {
         Customer Source: <input type="text" name="customer_source[]" required><br>
         Date: <input type="date" name="shipment_date[]" required><br>
         Shipment Number: <input type="text" name="shipment_number[]" required><br>
-        From: <input type="text" name="from_location[]" required>
-        To: <input type="text" name="to_location[]" required><br>
+        From: <input type="text" name="from_location[]" class="from" required>
+        To: <input type="text" name="to_location[]" class="to" required>
+        <button type="button" onclick="searchRate(this)">🔍 Search Rate</button><br>
         Vehicle Reg: <input type="text" name="vehicle_reg[]" required><br>
         Net Weight (tonnes): <input type="number" step="0.01" name="net_weight[]" required><br>
-        Distance (KM): <input type="number" step="0.1" name="distance_km[]" placeholder="Enter if rate not found" ><br><br>
+        Distance (KM): <input type="text" name="distance_km[]" class="distance" placeholder="Enter if rate not found"><br><br>
     `;
     document.getElementById('deliveries').appendChild(div);
+}
+
+function searchRate(button) {
+    const parent = button.closest('.delivery-entry');
+    const from = parent.querySelector('.from').value.trim().toUpperCase();
+    const to = parent.querySelector('.to').value.trim().toUpperCase();
+    const distanceInput = parent.querySelector('.distance');
+
+    fetch('search-rate.php?from=' + from + '&to=' + to)
+        .then(res => res.json())
+        .then(data => {
+            if (data.found) {
+                distanceInput.value = data.distance;
+                alert('✅ Special route found and distance filled.');
+            } else {
+                alert('❌ No rate found for this route. Please enter distance manually.');
+            }
+        })
+        .catch(() => alert('❌ An error occurred while searching.'));
 }
 </script>
