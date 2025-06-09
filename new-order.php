@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $shipment_number = $_POST['shipment_number'][$i];
         $customer_source = $_POST['customer_source'][$i];
         $shipment_date = $_POST['shipment_date'][$i];
-        $from_location = $_POST['from_location'][$i];
-        $to_location = $_POST['to_location'][$i];
+        $from_location = strtoupper(trim($_POST['from_location'][$i]));
+        $to_location = strtoupper(trim($_POST['to_location'][$i]));
         $vehicle_reg = $_POST['vehicle_reg'][$i];
         $net_weight = $_POST['net_weight'][$i];
         $distance_km = trim($_POST['distance_km'][$i]);
@@ -25,9 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $base_rate = 0;
         $vat_percent = 16.00;
 
-        $rate_sql = "SELECT rate FROM zone_rates WHERE zone = ? AND distance LIKE CONCAT('%', ?, '%') LIMIT 1";
+        // Attempt special route rate from zone_rates
+        $route = "$from_location-$to_location";
+        $rate_sql = "SELECT rate FROM zone_rates WHERE distance LIKE CONCAT('%', ?, '%') LIMIT 1";
         $rate_stmt = mysqli_prepare($conn, $rate_sql);
-        mysqli_stmt_bind_param($rate_stmt, "ss", $from_location, $to_location);
+        mysqli_stmt_bind_param($rate_stmt, "s", $route);
         mysqli_stmt_execute($rate_stmt);
         $rate_result = mysqli_stmt_get_result($rate_stmt);
         $rate_data = mysqli_fetch_assoc($rate_result);
@@ -36,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $base_rate = $rate_data['rate'];
         } else {
             if (empty($distance_km)) {
-                die("Distance is required when rate is not found.");
+                die("❌ Distance is required when rate is not found.");
             }
 
             $distance_value = (float) $distance_km;

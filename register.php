@@ -6,11 +6,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
     $role = $_POST['role'];
     $national_id = $_POST['national_id'];
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+   $hashed_password = $_POST['password'];
 
     $sql = "INSERT INTO users (name, email, password, role, national_id) VALUES (?, ?, ?, ?, ?)";
     $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "sssss", $name, $email, $password, $role, $national_id);
+    mysqli_stmt_bind_param($stmt, "sssss", $name, $email, $hashed_password, $role, $national_id);
 
     if (mysqli_stmt_execute($stmt)) {
         echo "✅ Registration successful!";
