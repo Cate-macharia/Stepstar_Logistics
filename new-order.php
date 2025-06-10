@@ -25,17 +25,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $base_rate = 0;
         $vat_percent = 16.00;
 
-        // Attempt special route rate from zone_rates
-        $route = "$from_location-$to_location";
-        $rate_sql = "SELECT rate FROM zone_rates WHERE distance LIKE CONCAT('%', ?, '%') LIMIT 1";
-        $rate_stmt = mysqli_prepare($conn, $rate_sql);
-        mysqli_stmt_bind_param($rate_stmt, "s", $route);
-        mysqli_stmt_execute($rate_stmt);
-        $rate_result = mysqli_stmt_get_result($rate_stmt);
-        $rate_data = mysqli_fetch_assoc($rate_result);
+       $route = "$from_location - $to_location";
+$rate_sql = "SELECT base_rate FROM manual_rates WHERE CONCAT(from_location, ' - ', to_location) = ? LIMIT 1";
+$rate_stmt = mysqli_prepare($conn, $rate_sql);
+
+if (!$rate_stmt) {
+    die("❌ Query prepare failed: " . mysqli_error($conn));
+}
+
+mysqli_stmt_bind_param($rate_stmt, "s", $route);
+mysqli_stmt_execute($rate_stmt);
+$rate_result = mysqli_stmt_get_result($rate_stmt);
+$rate_data = mysqli_fetch_assoc($rate_result);
 
         if ($rate_data) {
-            $base_rate = $rate_data['rate'];
+            $base_rate = $rate_data['base_rate'];
         } else {
             if (empty($distance_km)) {
                 die("❌ Distance is required when rate is not found.");
@@ -62,8 +66,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sql = "INSERT INTO shipments (driver_id, shipment_number, customer_source, pickup_date, from_location, to_location, vehicle_reg, net_weight, distance_km, rate_per_tonne, vat_percent, amount, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "sssssssddddds", $driver_id, $shipment_number, $customer_source, $shipment_date, $from_location, $to_location, $vehicle_reg, $net_weight, $distance_km, $base_rate, $vat_percent, $amount, $status);
-        mysqli_stmt_execute($stmt);
+
+// Always check
+if (!$stmt) {
+    die("❌ Insert statement failed: " . mysqli_error($conn));
+}
+
+mysqli_stmt_bind_param($stmt, "sssssssddddds",
+    $driver_id, $shipment_number, $customer_source, $shipment_date,
+    $from_location, $to_location, $vehicle_reg, $net_weight,
+    $distance_km, $base_rate, $vat_percent, $amount, $status
+);
+mysqli_stmt_execute($stmt);
     }
 
     $success = true;
