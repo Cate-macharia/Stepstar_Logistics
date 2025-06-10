@@ -24,7 +24,7 @@ $role = $_SESSION['user']['role'];
         <nav>
             <ul>
                 <li><a href="view-orders.php">📋 View Orders</a></li>
-                <li><a href="drivers.php">👷 Drivers Management</a></li>
+                <li><a href="manage-drivers.php">👷 Drivers Management</a></li>
                 <li><a href="vehicles.php">🚚 Vehicle Management</a></li>
                 <li><a href="rates.php">💰 Rates Management</a></li>
                 <li><a href="reports.php">📈 Reports</a></li>

@@ -19,24 +19,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $from_location = strtoupper(trim($_POST['from_location'][$i]));
         $to_location = strtoupper(trim($_POST['to_location'][$i]));
         $vehicle_reg = $_POST['vehicle_reg'][$i];
-        $net_weight = $_POST['net_weight'][$i];
+        $net_weight = (float) $_POST['net_weight'][$i];
         $distance_km = trim($_POST['distance_km'][$i]);
 
         $base_rate = 0;
         $vat_percent = 16.00;
 
-       $route = "$from_location - $to_location";
-$rate_sql = "SELECT base_rate FROM manual_rates WHERE CONCAT(from_location, ' - ', to_location) = ? LIMIT 1";
-$rate_stmt = mysqli_prepare($conn, $rate_sql);
+        $route = "$from_location - $to_location";
+        $rate_sql = "SELECT base_rate FROM manual_rates WHERE CONCAT(from_location, ' - ', to_location) = ? LIMIT 1";
+        $rate_stmt = $conn->prepare($rate_sql);
 
-if (!$rate_stmt) {
-    die("❌ Query prepare failed: " . mysqli_error($conn));
-}
+        if (!$rate_stmt) {
+            die("❌ Query prepare failed: " . $conn->error);
+        }
 
-mysqli_stmt_bind_param($rate_stmt, "s", $route);
-mysqli_stmt_execute($rate_stmt);
-$rate_result = mysqli_stmt_get_result($rate_stmt);
-$rate_data = mysqli_fetch_assoc($rate_result);
+        $rate_stmt->bind_param("s", $route);
+        $rate_stmt->execute();
+        $rate_result = $rate_stmt->get_result();
+        $rate_data = $rate_result->fetch_assoc();
 
         if ($rate_data) {
             $base_rate = $rate_data['base_rate'];
@@ -63,21 +63,24 @@ $rate_data = mysqli_fetch_assoc($rate_result);
         $amount = $net_weight * $rate_with_vat;
         $status = 'Pending';
 
-        $sql = "INSERT INTO shipments (driver_id, shipment_number, customer_source, pickup_date, from_location, to_location, vehicle_reg, net_weight, distance_km, rate_per_tonne, vat_percent, amount, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = mysqli_prepare($conn, $sql);
+        $sql = "INSERT INTO shipments (
+                    driver_id, shipment_number, customer_source, pickup_date,
+                    from_location, to_location, vehicle_reg, net_weight,
+                    distance_km, rate_per_tonne, vat_percent, amount, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-// Always check
-if (!$stmt) {
-    die("❌ Insert statement failed: " . mysqli_error($conn));
-}
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            die("❌ Insert failed: " . $conn->error);
+        }
 
-mysqli_stmt_bind_param($stmt, "sssssssddddds",
-    $driver_id, $shipment_number, $customer_source, $shipment_date,
-    $from_location, $to_location, $vehicle_reg, $net_weight,
-    $distance_km, $base_rate, $vat_percent, $amount, $status
-);
-mysqli_stmt_execute($stmt);
+        $stmt->bind_param("sssssssddddds",
+            $driver_id, $shipment_number, $customer_source, $shipment_date,
+            $from_location, $to_location, $vehicle_reg, $net_weight,
+            $distance_km, $base_rate, $vat_percent, $amount, $status
+        );
+
+        $stmt->execute();
     }
 
     $success = true;
@@ -142,9 +145,9 @@ function searchRate(button) {
                 distanceInput.value = data.distance;
                 alert('✅ Special route found and distance filled.');
             } else {
-                alert('❌ No rate found for this route. Please enter distance manually.');
+                alert('❌ No rate found. Please enter distance manually.');
             }
         })
-        .catch(() => alert('❌ An error occurred while searching.'));
+        .catch(() => alert('❌ Error occurred while searching.'));
 }
 </script>
