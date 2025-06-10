@@ -23,7 +23,7 @@ $role = $_SESSION['user']['role'];
         <h2>🚛 Stepstar</h2>
         <nav>
             <ul>
-                <li><a href="view-orders.php">📋 View Orders</a></li>
+                <li><a href="view_orders.php">📋 View Orders</a></li>
                 <li><a href="manage-drivers.php">👷 Drivers Management</a></li>
                 <li><a href="vehicles.php">🚚 Vehicle Management</a></li>
                 <li><a href="rates.php">💰 Rates Management</a></li>
