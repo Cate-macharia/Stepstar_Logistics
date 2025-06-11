@@ -1,11 +1,4 @@
 <?php
-include '../includes/db.php';
-session_start();
-
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
-    header("Location: ../login.php");
-    exit();
-}
 
 $order_id = $_GET['id'] ?? null;
 if (!$order_id) {

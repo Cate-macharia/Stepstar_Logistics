@@ -1,11 +1,4 @@
 <?php
-session_start();
-include 'includes/db.php';
-
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
-    header("Location: login.php");
-    exit();
-}
 
 $success = $error = "";
 

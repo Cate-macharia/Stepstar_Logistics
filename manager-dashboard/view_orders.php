@@ -1,10 +1,6 @@
 <?php
 include '../includes/db.php';
 
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
-    header("Location: ../login.php");
-    exit();
-}
 
 $filter = $_GET['filter'] ?? 'all';
 $from_date = $_GET['from'] ?? '';
