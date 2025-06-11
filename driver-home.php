@@ -3,13 +3,12 @@ session_start();
 include 'includes/db.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'DRIVER') {
-    header("Location: ../login.php");
+    header("Location: login.php");
     exit();
 }
 
 $driver_name = $_SESSION['user']['name'];
 $national_id = $_SESSION['user']['national_id'];
-$page = $_GET['page'] ?? 'home';
 ?>
 
 <!DOCTYPE html>
@@ -17,7 +16,7 @@ $page = $_GET['page'] ?? 'home';
 <head>
     <meta charset="UTF-8">
     <title>Driver Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"> <!-- update this path to your CSS -->
 </head>
 <body>
 
@@ -26,9 +25,9 @@ $page = $_GET['page'] ?? 'home';
         <h2>🚛 Stepstar</h2>
         <nav>
             <ul>
-                <li><a href="dashboard-driver.php?page=home">🏠 Dashboard</a></li>
-                <li><a href="dashboard-driver.php?page=new-order">📦 New Orders</a></li>
-                <li><a href="dashboard-driver.php?page=order-history">📜 Order History</a></li>
+                <li><a href="/drivers/dashboard-driver.php">🏠 Dashboard</a></li>
+                <li><a href="drivers/new-order.php">📦 New Orders</a></li>
+                <li><a href="drivers/order-history.php">📜 Order History</a></li>
             </ul>
         </nav>
     </aside>
@@ -45,16 +44,8 @@ $page = $_GET['page'] ?? 'home';
         </header>
 
         <section class="content-area">
-            <?php
-                if ($page === 'new-order') {
-                    include 'new-order.php';
-                } elseif ($page === 'order-history') {
-                    include 'order-history.php';
-                } else {
-                    echo "<h1>🚚 Welcome to your Driver Dashboard</h1>
-                          <p>Select an action from the sidebar to begin managing your deliveries.</p>";
-                }
-            ?>
+            <h1>🚚 Welcome to your Driver Dashboard</h1>
+            <p>Select an action from the sidebar to begin managing your deliveries.</p>
         </section>
     </main>
 </div>

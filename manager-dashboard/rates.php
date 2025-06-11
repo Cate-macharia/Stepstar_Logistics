@@ -124,9 +124,9 @@ $rates = $conn->query("SELECT * FROM manual_rates ORDER BY created_at DESC");
         <ul>
             <li><a href="dashboard-manager.php">🏠 Dashboard</a></li>
             <li><a href="view_orders.php">📋 View Orders</a></li>
-            <li><a href="manage-drivers.php">👷 Drivers</a></li>
-            <li><a href="manage-vehicles.php">🚚 Vehicles</a></li>
-            <li><a href="rates.php">💰 Rates</a></li>
+            <li><a href="manage-drivers.php">👷 Drivers Management</a></li>
+            <li><a href="manage-vehicles.php">🚚 Vehicles Management</a></li>
+            <li><a href="rates.php">💰 Rates Management</a></li>
             <li><a href="generate-report.php">📈 Reports</a></li>
             <li><a href="logout.php">🚪 Logout</a></li>
         </ul>
