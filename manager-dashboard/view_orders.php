@@ -1,5 +1,4 @@
 <?php
-session_start();
 include '../includes/db.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
@@ -25,14 +24,6 @@ if ($filter === 'today') {
 $sql = "SELECT * FROM shipments WHERE $whereClause ORDER BY pickup_date DESC";
 $result = mysqli_query($conn, $sql);
 ?>
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>View Orders</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
 
 <h2>📋 All Orders</h2>
 
@@ -102,6 +93,3 @@ function toggleRange(value) {
     document.getElementById('range').style.display = value === 'range' ? 'inline' : 'none';
 }
 </script>
-
-</body>
-</html>

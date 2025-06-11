@@ -1,5 +1,4 @@
 <?php
-session_start();
 include '../includes/db.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
@@ -118,19 +117,6 @@ $rates = $conn->query("SELECT * FROM manual_rates ORDER BY created_at DESC");
     </style>
 </head>
 <body>
-<div class="wrapper">
-    <div class="sidebar">
-        <h2>🚛 Stepstar</h2>
-        <ul>
-            <li><a href="dashboard-manager.php">🏠 Dashboard</a></li>
-            <li><a href="view_orders.php">📋 View Orders</a></li>
-            <li><a href="manage-drivers.php">👷 Drivers Management</a></li>
-            <li><a href="manage-vehicles.php">🚚 Vehicles Management</a></li>
-            <li><a href="rates.php">💰 Rates Management</a></li>
-            <li><a href="generate-report.php">📈 Reports</a></li>
-            <li><a href="logout.php">🚪 Logout</a></li>
-        </ul>
-    </div>
 
     <div class="main-content">
         <div class="dashboard-header">

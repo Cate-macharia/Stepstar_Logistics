@@ -7,6 +7,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
 
 $manager_name = $_SESSION['user']['name'];
 $role = $_SESSION['user']['role'];
+$page = $_GET['page'] ?? 'home';
 ?>
 
 <!DOCTYPE html>
@@ -23,12 +24,12 @@ $role = $_SESSION['user']['role'];
         <h2>🚛 Stepstar</h2>
         <nav>
             <ul>
-                <li><a href="view_orders.php">📋 View Orders</a></li>
-                <li><a href="manage-drivers.php">👷 Drivers Management</a></li>
-                <li><a href="vehicles.php">🚚 Vehicle Management</a></li>
-                <li><a href="rates.php">💰 Rates Management</a></li>
-                <li><a href="reports.php">📈 Reports</a></li>
-                <li><a href="expenses.php">💸 Expenses</a></li>
+                <li><a href="dashboard-manager.php?page=view_orders">📋 View Orders</a></li>
+                <li><a href="dashboard-manager.php?page=manage-drivers">👷 Drivers Management</a></li>
+                <li><a href="dashboard-manager.php?page=vehicles">🚚 Vehicle Management</a></li>
+                <li><a href="dashboard-manager.php?page=rates">💰 Rates Management</a></li>
+                <li><a href="dashboard-manager.php?page=reports">📈 Reports</a></li>
+                <li><a href="dashboard-manager.php?page=expenses">💸 Expenses</a></li>
             </ul>
         </nav>
     </aside>
@@ -45,8 +46,31 @@ $role = $_SESSION['user']['role'];
         </header>
 
         <section class="content-area">
-            <h1>📊 Welcome to your Manager Dashboard</h1>
-            <p>Select an option from the left sidebar to begin.</p>
+            <?php
+            switch ($page) {
+                case 'view_orders':
+                    include 'view_orders.php';
+                    break;
+                case 'manage-drivers':
+                    include 'manage-drivers.php';
+                    break;
+                case 'vehicles':
+                    include 'vehicles.php';
+                    break;
+                case 'rates':
+                    include 'rates.php';
+                    break;
+                case 'reports':
+                    include 'reports.php';
+                    break;
+                case 'expenses':
+                    include 'expenses.php';
+                    break;
+                default:
+                    echo "<h1>📊 Welcome to your Manager Dashboard</h1>
+                          <p>Select an option from the left sidebar to begin.</p>";
+            }
+            ?>
         </section>
     </main>
 </div>
