@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
     $amount = floatval($_POST['amount']);
 
     if ($vehicle_id && $description && $amount > 0) {
-        $stmt = $conn->prepare("INSERT INTO vehicle_expenses (vehicle_id, description, amount) VALUES (?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO expenses (vehicle_id, description, amount) VALUES (?, ?, ?)");
         $stmt->bind_param("isd", $vehicle_id, $description, $amount);
         if ($stmt->execute()) {
             $success = "✅ Expense recorded.";
@@ -23,17 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
     }
 }
 
-$expenses = [];
+// Fetch expenses for the vehicle
+$expenses = null;
 if ($vehicle_id) {
-    $sql = "INSERT INTO expenses (vehicle_id, type, amount, description) VALUES (?, ?, ?, ?)";
-$stmt = $conn->prepare($sql);
-
-if (!$stmt) {
-    die("SQL Prepare Failed: " . $conn->error . " | Query: $sql");
-}
-
-$stmt->bind_param("isds", $vehicle_id, $type, $amount, $description);
-
+    $query = "SELECT * FROM expenses WHERE vehicle_id = ? ORDER BY created_at DESC";
+    $stmt = $conn->prepare($query);
+    if (!$stmt) {
+        die("SQL Prepare Failed: " . $conn->error . " | Query: $query");
+    }
+    $stmt->bind_param("i", $vehicle_id);
     $stmt->execute();
     $expenses = $stmt->get_result();
 }
@@ -91,7 +89,7 @@ $stmt->bind_param("isds", $vehicle_id, $type, $amount, $description);
         <form method="POST" class="expense-form">
             <input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($vehicle_id); ?>">
             <input type="text" name="description" placeholder="Description" required>
-            <input type="number" name="amount" placeholder="Amount" step="0.01" required>
+            <input type="number" name="amount" placeholder="Amount (KES)" step="0.01" required>
             <button type="submit" name="add_expense">Add Expense</button>
         </form>
 
@@ -106,16 +104,17 @@ $stmt->bind_param("isds", $vehicle_id, $type, $amount, $description);
                 </tr>
             </thead>
             <tbody>
-                <?php $i=1; while ($exp = $expenses->fetch_assoc()): ?>
-                <tr>
-                    <td><?php echo $i++; ?></td>
-                    <td><?php echo htmlspecialchars($exp['description']); ?></td>
-                    <td>KES <?php echo number_format($exp['amount'], 2); ?></td>
-                    <td><?php echo $exp['created_at']; ?></td>
-                </tr>
-                <?php endwhile; ?>
-                <?php if ($expenses->num_rows === 0): ?>
-                <tr><td colspan="4">No expenses recorded for this vehicle.</td></tr>
+                <?php if ($expenses && $expenses->num_rows > 0): ?>
+                    <?php $i = 1; while ($exp = $expenses->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo $i++; ?></td>
+                            <td><?php echo htmlspecialchars($exp['description']); ?></td>
+                            <td>KES <?php echo number_format($exp['amount'], 2); ?></td>
+                            <td><?php echo $exp['created_at']; ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr><td colspan="4">No expenses recorded for this vehicle.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
