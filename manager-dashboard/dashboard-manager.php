@@ -66,6 +66,10 @@ $page = $_GET['page'] ?? 'home';
                 case 'expenses':
                     include 'expenses.php';
                     break;
+                    case 'view_expenses':
+                    include 'expenses.php';
+                    break;
+
                 default:
                     echo "<h1>📊 Welcome to your Manager Dashboard</h1>
                           <p>Select an option from the left sidebar to begin.</p>";

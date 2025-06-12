@@ -1,6 +1,38 @@
 <?php
+include '../includes/db.php';
 
 $success = $error = "";
+
+// If edit is requested
+$edit_id = isset($_GET['edit']) ? (int)$_GET['edit'] : null;
+$edit_driver = null;
+
+if ($edit_id) {
+    $res = $conn->prepare("SELECT * FROM users WHERE id = ? AND role = 'DRIVER'");
+    $res->bind_param("i", $edit_id);
+    $res->execute();
+    $edit_driver = $res->get_result()->fetch_assoc();
+}
+
+// Handle update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_driver'])) {
+    $id = $_POST['driver_id'];
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $nid = trim($_POST['national_id']);
+
+    $stmt = $conn->prepare("UPDATE users SET name=?, email=?, national_id=? WHERE id=? AND role='DRIVER'");
+    $stmt->bind_param("sssi", $name, $email, $nid, $id);
+
+    if ($stmt->execute()) {
+        $success = "✅ Driver updated successfully.";
+    } else {
+        $error = "❌ Failed to update: " . $stmt->error;
+    }
+
+    $edit_id = null;
+    $edit_driver = null;
+}
 
 // Handle driver addition
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_driver'])) {
@@ -9,7 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_driver'])) {
     $nid = trim($_POST['national_id']);
     $password = password_hash(trim($_POST['password']), PASSWORD_DEFAULT);
 
-    // Check if NID exists
     $check = $conn->prepare("SELECT id FROM users WHERE national_id = ?");
     $check->bind_param("s", $nid);
     $check->execute();
@@ -36,7 +67,6 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     exit();
 }
 
-// Fetch all drivers
 $drivers = $conn->query("SELECT * FROM users WHERE role = 'DRIVER' ORDER BY created_at DESC");
 ?>
 
@@ -64,68 +94,66 @@ $drivers = $conn->query("SELECT * FROM users WHERE role = 'DRIVER' ORDER BY crea
     </style>
 </head>
 <body>
-<div class="wrapper">
-    <div class="sidebar">
-        <h2>🚚 Stepstar Logistics</h2>
-        <ul>
-            <li><a href="dashboard-manager.php">🏠 Dashboard</a></li>
-            <li><a href="view_orders.php">📄 View Orders</a></li>
-            <li><a href="manage-drivers.php">👥 Manage Drivers</a></li>
-            <li><a href="manage-vehicles.php">🚛 Manage Vehicles</a></li>
-            <li><a href="logout.php">🚪 Logout</a></li>
-        </ul>
+<div class="main-content">
+    <div class="dashboard-header">
+        <div class="user-info">Welcome, Manager</div>
     </div>
-    <div class="main-content">
-        <div class="dashboard-header">
-            <div class="user-info">Welcome, Manager</div>
-        </div>
-        <div class="content-area">
-            <h1>👥 Manage Drivers</h1>
+    <div class="content-area">
+        <h1>👥 Manage Drivers</h1>
 
-            <?php if ($success): ?><p class="success"><?php echo $success; ?></p><?php endif; ?>
-            <?php if ($error): ?><p class="error"><?php echo $error; ?></p><?php endif; ?>
+        <?php if ($success): ?><p class="success"><?php echo $success; ?></p><?php endif; ?>
+        <?php if ($error): ?><p class="error"><?php echo $error; ?></p><?php endif; ?>
 
-            <h3>➕ Add New Driver</h3>
-            <form method="POST">
-                <input type="text" name="name" placeholder="Full Name" required>
-                <input type="email" name="email" placeholder="Email" required>
-                <input type="text" name="national_id" placeholder="National ID" required>
+        <h3><?= $edit_driver ? '✏️ Edit Driver' : '➕ Add New Driver' ?></h3>
+        <form method="POST">
+            <?php if ($edit_driver): ?>
+                <input type="hidden" name="driver_id" value="<?= $edit_driver['id'] ?>">
+            <?php endif; ?>
+
+            <input type="text" name="name" placeholder="Full Name" required value="<?= $edit_driver['name'] ?? '' ?>">
+            <input type="email" name="email" placeholder="Email" required value="<?= $edit_driver['email'] ?? '' ?>">
+            <input type="text" name="national_id" placeholder="National ID" required value="<?= $edit_driver['national_id'] ?? '' ?>">
+
+            <?php if ($edit_driver): ?>
+                <button type="submit" name="update_driver">💾 Update Driver</button>
+                <a href="manage-drivers.php" class="btn" style="background:#777;margin-left:10px;">Cancel</a>
+            <?php else: ?>
                 <input type="password" name="password" placeholder="Password" required>
                 <button type="submit" name="add_driver">Add Driver</button>
-            </form>
+            <?php endif; ?>
+        </form>
 
-            <h3 style="margin-top:30px;">📋 Registered Drivers</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>National ID</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php $i=1; while($d = $drivers->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo $i++; ?></td>
-                        <td><?php echo htmlspecialchars($d['name']); ?></td>
-                        <td><?php echo htmlspecialchars($d['email']); ?></td>
-                        <td><?php echo htmlspecialchars($d['national_id']); ?></td>
-                        <td><?php echo $d['created_at']; ?></td>
-                        <td>
-                            <a href="edit-driver.php?id=<?php echo $d['id']; ?>" class="btn">✏️ Edit</a>
-                            <a href="manage-drivers.php?delete=<?php echo $d['id']; ?>" class="btn" onclick="return confirm('Delete this driver?')">🗑️ Delete</a>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                    <?php if ($drivers->num_rows == 0): ?>
-                    <tr><td colspan="6">No drivers registered yet.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+        <h3 style="margin-top:30px;">📋 Registered Drivers</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>National ID</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php $i=1; while($d = $drivers->fetch_assoc()): ?>
+                <tr>
+                    <td><?php echo $i++; ?></td>
+                    <td><?php echo htmlspecialchars($d['name']); ?></td>
+                    <td><?php echo htmlspecialchars($d['email']); ?></td>
+                    <td><?php echo htmlspecialchars($d['national_id']); ?></td>
+                    <td><?php echo $d['created_at']; ?></td>
+                    <td>
+                       <a href="dashboard-manager.php?page=manage-drivers&edit=<?php echo $d['id']; ?>" class="btn">✏️ Edit</a>
+                        <a href="manage-drivers.php?delete=<?php echo $d['id']; ?>" class="btn" onclick="return confirm('Delete this driver?')">🗑️ Delete</a>
+                    </td>
+                </tr>
+                <?php endwhile; ?>
+                <?php if ($drivers->num_rows == 0): ?>
+                <tr><td colspan="6">No drivers registered yet.</td></tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 </body>
