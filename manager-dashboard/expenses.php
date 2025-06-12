@@ -14,14 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
     $type = $_POST['expense_type'];
     $description = trim($_POST['description']);
     $amount = floatval($_POST['amount']);
-    $vehicle_id = $_POST['vehicle_id'] ?? null;
-    $driver_id = $_POST['driver_id'] ?? null;
+    $vehicle_id = ($_POST['expense_type'] === 'vehicle') ? intval($_POST['vehicle_id']) : null;
+    $driver_id = ($_POST['expense_type'] === 'driver') ? intval($_POST['driver_id']) : null;
 
     if ($description && $amount > 0) {
         $stmt = $conn->prepare("INSERT INTO expenses (type, description, amount, vehicle_id, driver_id) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("ssdii", $type, $description, $amount, $vehicle_id, $driver_id);
         if ($stmt->execute()) {
-            $success = "✅ Expense recorded.";
+            header("Location: dashboard-manager.php?page=expenses&success=1&filter=$filter&from=$from&to=$to");
+            exit();
         } else {
             $error = "❌ Failed to add expense: " . $stmt->error;
         }
@@ -30,17 +31,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
     }
 }
 
-// Build WHERE clause for filtering
-$whereClause = "1";
-if ($filter === 'today') {
-    $whereClause = "DATE(created_at) = CURDATE()";
-} elseif ($filter === 'week') {
-    $whereClause = "YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)";
-} elseif ($filter === 'month') {
-    $whereClause = "MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())";
-} elseif ($filter === 'range' && $from && $to) {
-    $whereClause = "DATE(created_at) BETWEEN '$from' AND '$to'";
+if (isset($_GET['success'])) {
+    $success = "✅ Expense recorded.";
 }
+
+// Build WHERE clause for filtering
+$whereParts = [];
+if ($vehicle_id) {
+    $whereParts[] = "vehicle_id = " . intval($vehicle_id);
+}
+if ($filter === 'today') {
+    $whereParts[] = "DATE(created_at) = CURDATE()";
+} elseif ($filter === 'week') {
+    $whereParts[] = "YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)";
+} elseif ($filter === 'month') {
+    $whereParts[] = "MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())";
+} elseif ($filter === 'range' && $from && $to) {
+    $whereParts[] = "DATE(created_at) BETWEEN '$from' AND '$to'";
+}
+$whereClause = count($whereParts) ? implode(" AND ", $whereParts) : "1";
 
 $expenses = $conn->query("SELECT * FROM expenses WHERE $whereClause ORDER BY created_at DESC");
 $totalResult = $conn->query("SELECT SUM(amount) as total FROM expenses WHERE $whereClause");
@@ -129,7 +138,9 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
 
         <h2>📋 Expense Records</h2>
 
-        <form method="GET" class="filter-bar">
+        <form method="GET" action="dashboard-manager.php" class="filter-bar">
+            <input type="hidden" name="page" value="expenses">
+            <input type="hidden" name="vehicle_id" value="<?= htmlspecialchars($vehicle_id) ?>">
             <label>Filter:</label>
             <select name="filter" onchange="this.form.submit()">
                 <option value="all" <?= $filter === 'all' ? 'selected' : '' ?>>All</option>
@@ -147,7 +158,6 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Type</th>
                     <th>Description</th>
                     <th>Amount</th>
                     <th>Date</th>
@@ -157,19 +167,18 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
                 <?php $i = 1; while ($exp = $expenses->fetch_assoc()): ?>
                 <tr>
                     <td><?= $i++ ?></td>
-                    <td><?= ucfirst($exp['type']) ?></td>
                     <td><?= htmlspecialchars($exp['description']) ?></td>
                     <td>KES <?= number_format($exp['amount'], 2) ?></td>
                     <td><?= $exp['created_at'] ?></td>
                 </tr>
                 <?php endwhile; ?>
                 <?php if ($expenses->num_rows === 0): ?>
-                <tr><td colspan="5">No expenses recorded.</td></tr>
+                <tr><td colspan="4" style="color:red;">⚠️ No expenses found for this filter.</td></tr>
                 <?php endif; ?>
             </tbody>
             <tfoot>
                 <tr>
-                    <th colspan="3" style="text-align:right;">Total:</th>
+                    <th colspan="2" style="text-align:right;">Total:</th>
                     <th colspan="2">KES <?= number_format($totalAmount, 2) ?></th>
                 </tr>
             </tfoot>

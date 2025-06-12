@@ -140,7 +140,8 @@ $vehicles = $conn->query("SELECT * FROM vehicles ORDER BY created_at DESC");
                     <td><?php echo $v['created_at']; ?></td>
                     <td>
                         <a href="dashboard-manager.php?page=vehicles&delete=<?php echo $v['id']; ?>" class="btn" onclick="return confirm('Delete this vehicle?')">🗑️ Delete</a>
-                        <a href="dashboard-manager.php?page=view_expenses&vehicle_id=<?php echo $v['id']; ?>" class="btn btn-view">📊 View Expenses</a>
+                        <a href="dashboard-manager.php?page=view_expenses&vehicle_id=<?= $v['id'] ?>" class="btn btn-view">📊 View Expenses</a>
+
                     </td>
                 </tr>
                 <?php endwhile; ?>
