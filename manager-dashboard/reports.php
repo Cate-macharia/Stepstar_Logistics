@@ -114,12 +114,10 @@ $topCustomer = $topCustomerRes->fetch_assoc();
         }
         .charts-container { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 30px; justify-content: center; }
         .chart-box {
-            flex: 1; min-width: 300px; max-width: 400px;
+            flex: 1; min-width: 300px; max-width: 400px; height: 300px;
             background: #fff; padding: 15px;
             border: 1px solid #ddd; border-radius: 10px;
-            height: 300px;
         }
-        .chart-box canvas { height: 250px !important; }
         .summary-boxes {
             display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between;
         }
@@ -130,8 +128,10 @@ $topCustomer = $topCustomerRes->fetch_assoc();
 <body>
     <h2>📊 Financial Reports</h2>
 
-    <form method="GET" class="filters">
-        <label>Filter:</label>
+    <form method="GET" action="dashboard-manager.php">
+    <input type="hidden" name="page" value="reports">
+    <label>Filter:</label>
+    <!-- rest of your form -->
         <select name="filter" onchange="toggleRange(this.value)">
             <option value="today" <?= $filter === 'today' ? 'selected' : '' ?>>Today</option>
             <option value="week" <?= $filter === 'week' ? 'selected' : '' ?>>This Week</option>

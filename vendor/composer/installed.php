@@ -1,39 +1,39 @@
 <?php return array(
     'root' => array(
-        'name' => '__root__',
+        'name' => 'macha/stepstarlogistics',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'dc911711d6d9f2c73fc3f4a48cfd9a33dba62c5c',
+        'reference' => 'c40124907be0c52972baf45b4ab844a5647981fe',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => true,
     ),
     'versions' => array(
-        '__root__' => array(
+        'macha/stepstarlogistics' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'dc911711d6d9f2c73fc3f4a48cfd9a33dba62c5c',
+            'reference' => 'c40124907be0c52972baf45b4ab844a5647981fe',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'smalot/pdfparser' => array(
-            'pretty_version' => 'v2.12.0',
-            'version' => '2.12.0.0',
-            'reference' => '8440edbf58c8596074e78ada38dcb0bd041a5948',
+        'mpdf/mpdf' => array(
+            'pretty_version' => 'v6.1.3',
+            'version' => '6.1.3.0',
+            'reference' => '7f138bf7508eac895ac2c13d2509b056ac7e7e97',
             'type' => 'library',
-            'install_path' => __DIR__ . '/../smalot/pdfparser',
+            'install_path' => __DIR__ . '/../mpdf/mpdf',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'symfony/polyfill-mbstring' => array(
-            'pretty_version' => 'v1.32.0',
-            'version' => '1.32.0.0',
-            'reference' => '6d857f4d76bd4b343eac26d6b539585d2bc56493',
+        'setasign/fpdi' => array(
+            'pretty_version' => '1.6.2',
+            'version' => '1.6.2.0',
+            'reference' => 'a6ad58897a6d97cc2d2cd2adaeda343b25a368ea',
             'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/polyfill-mbstring',
+            'install_path' => __DIR__ . '/../setasign/fpdi',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

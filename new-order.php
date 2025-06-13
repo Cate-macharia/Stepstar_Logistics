@@ -1,5 +1,6 @@
 <?php
 include 'includes/db.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'DRIVER') {
     header("Location: login.php");
@@ -87,6 +88,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
 
         $stmt->execute();
+
+        // Generate PDF Invoice using mPDF
+        $mpdf = new \Mpdf\Mpdf();
+        $invoiceHTML = "<h2 style='color:#2e6c80;'>Stepstar Logistics Invoice</h2>
+            <strong>Driver:</strong> $driver_name (ID: $driver_id)<br>
+            <strong>Shipment No:</strong> $shipment_number<br>
+            <strong>Customer:</strong> $customer_source<br>
+            <strong>Date:</strong> $shipment_date<br>
+            <strong>From:</strong> $from_location<br>
+            <strong>To:</strong> $to_location<br>
+            <strong>Vehicle:</strong> $vehicle_reg<br>
+            <strong>Net Weight:</strong> $net_weight tonnes<br>
+            <strong>Rate/Tonne:</strong> KES $base_rate<br>
+            <strong>VAT (16%):</strong> Included<br>
+            <strong>Total Amount:</strong> KES " . number_format($amount, 2) . "<br><hr>
+            <small>Generated on " . date('Y-m-d H:i') . "</small>";
+
+        $mpdf->WriteHTML($invoiceHTML);
+        $pdfPath = __DIR__ . "/invoices/invoice_{$shipment_number}.pdf";
+        $mpdf->Output($pdfPath, \Mpdf\Output\Destination::FILE);
     }
 
     $success = true;

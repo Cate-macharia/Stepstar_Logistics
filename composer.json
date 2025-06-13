@@ -1,5 +1,17 @@
 {
+    "name": "macha/stepstarlogistics",
+    "autoload": {
+        "psr-4": {
+            "Macha\\Stepstarlogistics\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Cate-macharia",
+            "email": "machariacate5@gmail.com"
+        }
+    ],
     "require": {
-        "smalot/pdfparser": "^2.12"
+        "mpdf/mpdf": "^6.1"
     }
 }
