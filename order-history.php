@@ -1,20 +1,39 @@
 <?php
-session_start();
 include 'includes/db.php';
 
-$driver_name = $_SESSION['user']['name'];
-$driver_id = $_SESSION['user']['national_id']; // FIXED: Using National ID
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'DRIVER') {
+    header("Location: login.php");
+    exit();
+}
 
+$driver_name = $_SESSION['user']['name'];
+$driver_id = $_SESSION['user']['national_id'];
+$success = false;
 $filter = $_GET['filter'] ?? 'all';
 $from_date = $_GET['from_date'] ?? '';
 $to_date = $_GET['to_date'] ?? '';
 
-$results = [];
+$vehicles = $conn->query("SELECT vehicle_reg FROM vehicles ORDER BY vehicle_reg ASC");
+$vehicleOptions = "";
+while ($v = $vehicles->fetch_assoc()) {
+    $vehicleOptions .= "<option value=\"{$v['vehicle_reg']}\">{$v['vehicle_reg']}</option>";
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
+    $shipment_id = $_POST['shipment_id'];
+    $new_status = $_POST['status'];
+
+    $update_sql = "UPDATE shipments SET status = ? WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $update_sql);
+    mysqli_stmt_bind_param($stmt, "si", $new_status, $shipment_id);
+    mysqli_stmt_execute($stmt);
+    echo "<p style='color:green;'>✅ Status updated to <strong>$new_status</strong>!</p>";
+}
+
 $whereClause = "WHERE driver_id = ?";
 $params = [$driver_id];
 $types = "s";
 
-// Filter logic
 if ($filter === 'today') {
     $whereClause .= " AND DATE(pickup_date) = CURDATE()";
 } elseif ($filter === 'week') {
@@ -28,19 +47,6 @@ if ($filter === 'today') {
     $types .= "ss";
 }
 
-// Handle status update
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
-    $shipment_id = $_POST['shipment_id'];
-    $new_status = $_POST['status'];
-
-    $update_sql = "UPDATE shipments SET status = ? WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $update_sql);
-    mysqli_stmt_bind_param($stmt, "si", $new_status, $shipment_id);
-    mysqli_stmt_execute($stmt);
-    echo "<p style='color:green;'>✅ Status updated to <strong>$new_status</strong>!</p>";
-}
-
-// Fetch records
 $sql = "SELECT * FROM shipments $whereClause ORDER BY pickup_date DESC";
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, $types, ...$params);
@@ -49,12 +55,10 @@ $result = mysqli_stmt_get_result($stmt);
 ?>
 
 <h2>📋 Order History - <?php echo htmlspecialchars($driver_name); ?></h2>
-<!-- Back Button After Table -->
-<div style="margin-top: 25px; text-align: right;">
-    <a href="dashboard-driver.php" style="text-decoration:none; background:#6c757d; color:white; padding:8px 12px; border-radius:5px;">⬅️ Back to Dashboard</a>
-</div>
 
-<form method="GET">
+<form method="GET" action="dashboard-driver.php">
+    <input type="hidden" name="page" value="order-history">
+
     <label>Filter by:</label>
     <select name="filter" onchange="toggleDateRange(this.value)">
         <option value="all" <?= $filter === 'all' ? 'selected' : '' ?>>All</option>
@@ -74,18 +78,20 @@ $result = mysqli_stmt_get_result($stmt);
 
 <hr>
 
-<table border="1" cellpadding="10" cellspacing="0">
-    <tr>
-        <th>Date</th>
-        <th>Shipment No</th>
-        <th>Route</th>
-        <th>Vehicle</th>
-        <th>Status</th>
-        <th>Update Status</th>
-    </tr>
-
+<table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr style="background: #f4f4f4;">
+            <th>Date</th>
+            <th>Shipment No</th>
+            <th>Route</th>
+            <th>Vehicle</th>
+            <th>Status</th>
+            <th>Update Status</th>
+        </tr>
+    </thead>
+    <tbody>
     <?php if (mysqli_num_rows($result) === 0): ?>
-        <tr><td colspan="6" style="color:red;">No deliveries found.</td></tr>
+        <tr><td colspan="6" style="color:red; text-align:center;">⚠️ No deliveries found for selected filter.</td></tr>
     <?php else: ?>
         <?php while ($row = mysqli_fetch_assoc($result)): ?>
         <tr>
@@ -97,17 +103,16 @@ $result = mysqli_stmt_get_result($stmt);
             <td>
                 <form method="POST" onsubmit="return confirmStatusChange('<?= $row['status'] ?>', this.status.value);">
                     <input type="hidden" name="shipment_id" value="<?= $row['id'] ?>">
-
                     <button type="submit" name="update_status" value="Pending" style="background-color:green;color:white;" onclick="this.form.status.value='Pending'">🟢</button>
                     <button type="submit" name="update_status" value="In Progress" style="background-color:gold;color:black;" onclick="this.form.status.value='In Progress'">🟡</button>
                     <button type="submit" name="update_status" value="Delivered" style="background-color:pink;color:black;" onclick="this.form.status.value='Delivered'">🌸</button>
-
                     <input type="hidden" name="status" value="">
                 </form>
             </td>
         </tr>
         <?php endwhile; ?>
     <?php endif; ?>
+    </tbody>
 </table>
 
 <script>

@@ -39,7 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_driver'])) {
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
     $nid = trim($_POST['national_id']);
-    $password = password_hash(trim($_POST['password']), PASSWORD_DEFAULT);
+    $password = trim($_POST['password']);
+
 
     $check = $conn->prepare("SELECT id FROM users WHERE national_id = ?");
     $check->bind_param("s", $nid);

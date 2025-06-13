@@ -1,5 +1,4 @@
 <?php
-session_start();
 include 'includes/db.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'DRIVER') {
@@ -10,6 +9,13 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'DRIVER') {
 $driver_name = $_SESSION['user']['name'];
 $driver_id = $_SESSION['user']['national_id'];
 $success = false;
+
+// Fetch registered vehicles for dropdown
+$vehicles = $conn->query("SELECT vehicle_reg FROM vehicles ORDER BY vehicle_reg ASC");
+$vehicleOptions = "";
+while ($v = $vehicles->fetch_assoc()) {
+    $vehicleOptions .= "<option value=\"{$v['vehicle_reg']}\">{$v['vehicle_reg']}</option>";
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     for ($i = 0; $i < count($_POST['shipment_number']); $i++) {
@@ -103,7 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 From: <input type="text" name="from_location[]" class="from" required>
                 To: <input type="text" name="to_location[]" class="to" required>
                 <button type="button" onclick="searchRate(this)">🔍 Search Rate</button><br>
-                Vehicle Reg: <input type="text" name="vehicle_reg[]" required><br>
+                Vehicle Reg:
+                <select name="vehicle_reg[]" required>
+                    <option value="">-- Select Vehicle --</option>
+                    <?= $vehicleOptions ?>
+                </select><br>
                 Net Weight (tonnes): <input type="number" step="0.01" name="net_weight[]" required><br>
                 Distance (KM): <input type="text" name="distance_km[]" class="distance" placeholder="Enter if rate not found"><br><br>
             </div>
@@ -125,7 +135,11 @@ function addEntry() {
         From: <input type="text" name="from_location[]" class="from" required>
         To: <input type="text" name="to_location[]" class="to" required>
         <button type="button" onclick="searchRate(this)">🔍 Search Rate</button><br>
-        Vehicle Reg: <input type="text" name="vehicle_reg[]" required><br>
+        Vehicle Reg:
+        <select name="vehicle_reg[]" required>
+            <option value="">-- Select Vehicle --</option>
+            <?= $vehicleOptions ?>
+        </select><br>
         Net Weight (tonnes): <input type="number" step="0.01" name="net_weight[]" required><br>
         Distance (KM): <input type="text" name="distance_km[]" class="distance" placeholder="Enter if rate not found"><br><br>
     `;

@@ -40,21 +40,24 @@ $page = $_GET['page'] ?? 'home';
             </div>
             <div class="top-actions">
                 <a href="settings.php">⚙️ Settings</a>
-                <a href="../logout.php">🚪 Logout</a>
+                <a href="logout.php">🚪 Logout</a>
             </div>
         </header>
 
         <section class="content-area">
             <?php
-                if ($page === 'new-order') {
-                    include 'new-order.php';
-                } elseif ($page === 'order-history') {
-                    include 'order-history.php';
-                } else {
-                    echo "<h1>🚚 Welcome to your Driver Dashboard</h1>
-                          <p>Select an action from the sidebar to begin managing your deliveries.</p>";
-                }
-            ?>
+$page = $_GET['page'] ?? '';
+
+if ($page === 'order-history') {
+    include 'order-history.php';
+} elseif ($page === 'new-order') {
+    include 'new-order.php';
+} else {
+    echo "<h2>🚚 Welcome to your Driver Dashboard</h2>";
+    echo "<p>Select an action from the sidebar to begin managing your deliveries.</p>";
+}
+?>
+
         </section>
     </main>
 </div>
