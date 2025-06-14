@@ -11,7 +11,6 @@ $driver_name = $_SESSION['user']['name'];
 $driver_id = $_SESSION['user']['national_id'];
 $success = false;
 
-// Fetch registered vehicles for dropdown
 $vehicles = $conn->query("SELECT vehicle_reg FROM vehicles ORDER BY vehicle_reg ASC");
 $vehicleOptions = "";
 while ($v = $vehicles->fetch_assoc()) {
@@ -89,21 +88,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt->execute();
 
-        // Generate PDF Invoice using mPDF
         $mpdf = new \Mpdf\Mpdf();
-        $invoiceHTML = "<h2 style='color:#2e6c80;'>Stepstar Logistics Invoice</h2>
-            <strong>Driver:</strong> $driver_name (ID: $driver_id)<br>
-            <strong>Shipment No:</strong> $shipment_number<br>
-            <strong>Customer:</strong> $customer_source<br>
-            <strong>Date:</strong> $shipment_date<br>
-            <strong>From:</strong> $from_location<br>
-            <strong>To:</strong> $to_location<br>
-            <strong>Vehicle:</strong> $vehicle_reg<br>
-            <strong>Net Weight:</strong> $net_weight tonnes<br>
-            <strong>Rate/Tonne:</strong> KES $base_rate<br>
-            <strong>VAT (16%):</strong> Included<br>
-            <strong>Total Amount:</strong> KES " . number_format($amount, 2) . "<br><hr>
-            <small>Generated on " . date('Y-m-d H:i') . "</small>";
+        $invoiceHTML = "<style>
+            body { font-family: sans-serif; font-size: 14px; }
+            h2 { color: #2e6c80; }
+            .section { margin-bottom: 10px; }
+            .bold { font-weight: bold; }
+        </style>
+        <h2>Stepstar Logistics Invoice</h2>
+        <div class='section'><span class='bold'>Driver:</span> $driver_name (ID: $driver_id)</div>
+        <div class='section'><span class='bold'>Shipment No:</span> $shipment_number</div>
+        <div class='section'><span class='bold'>Customer:</span> $customer_source</div>
+        <div class='section'><span class='bold'>Date:</span> $shipment_date</div>
+        <div class='section'><span class='bold'>Route:</span> $from_location → $to_location</div>
+        <div class='section'><span class='bold'>Vehicle:</span> $vehicle_reg</div>
+        <div class='section'><span class='bold'>Net Weight:</span> $net_weight tonnes</div>
+        <div class='section'><span class='bold'>Rate/Tonne:</span> KES $base_rate</div>
+        <div class='section'><span class='bold'>VAT (16%):</span> Included</div>
+        <div class='section'><span class='bold'>Total Amount:</span> KES " . number_format($amount, 2) . "</div>
+        <hr>
+        <small>Generated on " . date('Y-m-d H:i') . "</small>";
+
+        if (!is_dir(__DIR__ . '/invoices')) {
+            mkdir(__DIR__ . '/invoices', 0777, true);
+        }
 
         $mpdf->WriteHTML($invoiceHTML);
         $pdfPath = __DIR__ . "/invoices/invoice_{$shipment_number}.pdf";
@@ -114,29 +122,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<h2>📦 Record New Deliveries for <?php echo htmlspecialchars($driver_name); ?> (ID: <?php echo htmlspecialchars($driver_id); ?>)</h2>
+<h2 style="color:#333;">📦 Record New Deliveries for <?php echo htmlspecialchars($driver_name); ?> (ID: <?php echo htmlspecialchars($driver_id); ?>)</h2>
 
 <?php if ($success): ?>
     <p style="color:green;">✅ Deliveries recorded successfully!</p>
     <a href="dashboard-driver.php" style="text-decoration:none; background:#6c757d; color:white; padding:8px 12px; border-radius:5px; display:inline-block;">⬅️ Back to Dashboard</a>
 <?php else: ?>
-    <form method="POST" id="deliveryForm">
+    <form method="POST" id="deliveryForm" style="max-width:800px;">
         <div id="deliveries">
-            <div class="delivery-entry">
-                <h4>Delivery #1</h4>
-                Customer Source: <input type="text" name="customer_source[]" required><br>
-                Date: <input type="date" name="shipment_date[]" required><br>
-                Shipment Number: <input type="text" name="shipment_number[]" required><br>
-                From: <input type="text" name="from_location[]" class="from" required>
-                To: <input type="text" name="to_location[]" class="to" required>
-                <button type="button" onclick="searchRate(this)">🔍 Search Rate</button><br>
-                Vehicle Reg:
-                <select name="vehicle_reg[]" required>
-                    <option value="">-- Select Vehicle --</option>
-                    <?= $vehicleOptions ?>
-                </select><br>
-                Net Weight (tonnes): <input type="number" step="0.01" name="net_weight[]" required><br>
-                Distance (KM): <input type="text" name="distance_km[]" class="distance" placeholder="Enter if rate not found"><br><br>
+            <div class="delivery-entry" style="background:#f9f9f9;padding:15px;margin-bottom:10px;border-radius:6px;">
+                <h4>➕ Delivery #1</h4>
+                <div style="display:flex;flex-wrap:wrap;gap:15px;">
+                    <div style="flex:1;min-width:200px;">
+                        <label>Customer Source:</label>
+                        <input type="text" name="customer_source[]" required>
+                    </div>
+                    <div style="flex:1;min-width:200px;">
+                        <label>Date:</label>
+                        <input type="date" name="shipment_date[]" required>
+                    </div>
+                    <div style="flex:1;min-width:200px;">
+                        <label>Shipment Number:</label>
+                        <input type="text" name="shipment_number[]" required>
+                    </div>
+                    <div style="flex:1;min-width:200px;">
+                        <label>From:</label>
+                        <input type="text" name="from_location[]" class="from" required>
+                    </div>
+                    <div style="flex:1;min-width:200px;">
+                        <label>To:</label>
+                        <input type="text" name="to_location[]" class="to" required>
+                    </div>
+                    <div style="flex:1;min-width:200px;">
+                        <label>Search Rate:</label><br>
+                        <button type="button" onclick="searchRate(this)">🔍 Search Rate</button>
+                    </div>
+                    <div style="flex:1;min-width:200px;">
+                        <label>Vehicle Reg:</label>
+                        <select name="vehicle_reg[]" required>
+                            <option value="">-- Select Vehicle --</option>
+                            <?= $vehicleOptions ?>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:200px;">
+                        <label>Net Weight (tonnes):</label>
+                        <input type="number" step="0.01" name="net_weight[]" required>
+                    </div>
+                    <div style="flex:1;min-width:200px;">
+                        <label>Distance (KM):</label>
+                        <input type="text" name="distance_km[]" class="distance" placeholder="Enter if rate not found">
+                    </div>
+                </div>
             </div>
         </div>
         <button type="button" onclick="addEntry()">➕ Add Another Delivery</button><br><br>
@@ -150,19 +186,19 @@ function addEntry() {
     div.classList.add('delivery-entry');
     div.innerHTML = `
         <hr><h4>New Delivery</h4>
-        Customer Source: <input type="text" name="customer_source[]" required><br>
-        Date: <input type="date" name="shipment_date[]" required><br>
-        Shipment Number: <input type="text" name="shipment_number[]" required><br>
-        From: <input type="text" name="from_location[]" class="from" required>
-        To: <input type="text" name="to_location[]" class="to" required>
+        <label>Customer Source:</label><input type="text" name="customer_source[]" required><br>
+        <label>Date:</label><input type="date" name="shipment_date[]" required><br>
+        <label>Shipment Number:</label><input type="text" name="shipment_number[]" required><br>
+        <label>From:</label><input type="text" name="from_location[]" class="from" required>
+        <label>To:</label><input type="text" name="to_location[]" class="to" required>
         <button type="button" onclick="searchRate(this)">🔍 Search Rate</button><br>
-        Vehicle Reg:
+        <label>Vehicle Reg:</label>
         <select name="vehicle_reg[]" required>
             <option value="">-- Select Vehicle --</option>
             <?= $vehicleOptions ?>
         </select><br>
-        Net Weight (tonnes): <input type="number" step="0.01" name="net_weight[]" required><br>
-        Distance (KM): <input type="text" name="distance_km[]" class="distance" placeholder="Enter if rate not found"><br><br>
+        <label>Net Weight (tonnes):</label><input type="number" step="0.01" name="net_weight[]" required><br>
+        <label>Distance (KM):</label><input type="text" name="distance_km[]" class="distance" placeholder="Enter if rate not found"><br><br>
     `;
     document.getElementById('deliveries').appendChild(div);
 }
