@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome - Stepstar Logistics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .landing {
+      background: url('images/lorry-background.jpg') no-repeat center center/cover;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: white;
+      position: relative;
+    }
+
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.6);
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+    }
+
+    .content {
+      z-index: 1;
+      padding: 20px;
+    }
+
+    .content h1 {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    .content p {
+      font-size: 24px;
+      font-style: italic;
+      margin-bottom: 30px;
+    }
+
+    .btn-container {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 25px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      background-color: #007bff;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    @media (max-width: 768px) {
+      .content h1 {
+        font-size: 32px;
+      }
+
+      .content p {
+        font-size: 18px;
+      }
+
+      .btn {
+        font-size: 16px;
+        padding: 10px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="landing">
+    <div class="overlay"></div>
+    <div class="content">
+      <h1>STEPSTAR LOGISTICS LIMITED</h1>
+      <p>ON TIME, EVERY TIME</p>
+      <div class="btn-container">
+        <a href="login.php" class="btn">🔐 Login</a>
+        <a href="register.php" class="btn">📝 Create Account</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

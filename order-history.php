@@ -86,12 +86,13 @@ $result = mysqli_stmt_get_result($stmt);
             <th>Route</th>
             <th>Vehicle</th>
             <th>Status</th>
+            <th>Invoice</th>
             <th>Update Status</th>
         </tr>
     </thead>
     <tbody>
     <?php if (mysqli_num_rows($result) === 0): ?>
-        <tr><td colspan="6" style="color:red; text-align:center;">⚠️ No deliveries found for selected filter.</td></tr>
+        <tr><td colspan="7" style="color:red; text-align:center;">⚠️ No deliveries found for selected filter.</td></tr>
     <?php else: ?>
         <?php while ($row = mysqli_fetch_assoc($result)): ?>
         <tr>
@@ -100,6 +101,16 @@ $result = mysqli_stmt_get_result($stmt);
             <td><?= $row['from_location'] ?> → <?= $row['to_location'] ?></td>
             <td><?= $row['vehicle_reg'] ?? 'N/A' ?></td>
             <td><strong><?= $row['status'] ?></strong></td>
+            <td>
+                <?php 
+                $invoicePath = "invoices/invoice_{$row['shipment_number']}.pdf";
+                if (file_exists($invoicePath)) {
+                    echo "<a href='$invoicePath' target='_blank'>📄 View</a>";
+                } else {
+                    echo "<span style='color:gray;'>Not Generated</span>";
+                }
+                ?>
+            </td>
             <td>
                 <form method="POST" onsubmit="return confirmStatusChange('<?= $row['status'] ?>', this.status.value);">
                     <input type="hidden" name="shipment_id" value="<?= $row['id'] ?>">

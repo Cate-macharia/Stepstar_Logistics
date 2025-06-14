@@ -1,7 +1,6 @@
 <?php
 include '../includes/db.php';
 
-
 $filter = $_GET['filter'] ?? 'all';
 $from_date = $_GET['from'] ?? '';
 $to_date = $_GET['to'] ?? '';
@@ -77,7 +76,14 @@ $result = mysqli_query($conn, $sql);
                 <a href="edit_order.php?id=<?= $row['id'] ?>">✏️</a>
             </td>
             <td>
-                <a href="generate_invoice.php?id=<?= $row['id'] ?>" target="_blank">📄</a>
+                <?php 
+                $invoicePath = "../invoices/invoice_{$row['shipment_number']}.pdf";
+                if (file_exists($invoicePath)) {
+                    echo "<a href='$invoicePath' target='_blank'>📄 View</a>";
+                } else {
+                    echo "<span style='color:gray;'>Not Generated</span>";
+                }
+                ?>
             </td>
         </tr>
         <?php endwhile; ?>
