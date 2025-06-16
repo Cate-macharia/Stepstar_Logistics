@@ -1,4 +1,4 @@
-<?php
+<?php 
 session_start();
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
     header("Location: ../login.php");
@@ -24,6 +24,7 @@ $page = $_GET['page'] ?? 'home';
         <h2>🚛 Stepstar</h2>
         <nav>
             <ul>
+                <li><a href="dashboard-manager.php?page=New-orders"> 📦 New Order</a></li>
                 <li><a href="dashboard-manager.php?page=view_orders">📋 View Orders</a></li>
                 <li><a href="dashboard-manager.php?page=manage-drivers">👷 Drivers Management</a></li>
                 <li><a href="dashboard-manager.php?page=vehicles">🚚 Vehicle Management</a></li>
@@ -48,6 +49,9 @@ $page = $_GET['page'] ?? 'home';
         <section class="content-area">
             <?php
             switch ($page) {
+                case 'New-order':
+                    include 'New-orders.php';
+                    break;
                 case 'view_orders':
                     include 'view_orders.php';
                     break;
@@ -66,10 +70,9 @@ $page = $_GET['page'] ?? 'home';
                 case 'expenses':
                     include 'expenses.php';
                     break;
-                    case 'view_expenses':
+                case 'view_expenses':
                     include 'expenses.php';
                     break;
-
                 default:
                     echo "<h1>📊 Welcome to your Manager Dashboard</h1>
                           <p>Select an option from the left sidebar to begin.</p>";
