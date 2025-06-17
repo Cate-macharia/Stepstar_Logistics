@@ -88,39 +88,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt->execute();
 
-        $mpdf = new \Mpdf\Mpdf();
-        $mpdf->SetTitle("Invoice #$shipment_number");
-        $mpdf->SetMargins(10, 10, 10);
+       $mpdf = new \Mpdf\Mpdf(['default_font' => 'sans-serif']);
+$mpdf->SetTitle("Invoice #$shipment_number");
+$mpdf->SetMargins(10, 10, 10);
 
-        $invoiceHTML = "<div style='padding: 30px; font-family:sans-serif;'>
-            <div style='display: flex; justify-content: space-between; align-items: center;'>
-                <img src='assets/LOGO-page-001.jpg' style='height:60px;'>
-                <div style='text-align: right;'>
-                    <h2 style='margin:0;color:#2c3e50;'>INVOICE</h2>
-                    <small>Stepstar Logistics Ltd</small><br>
-                    <small>Nairobi, Kenya</small><br>
-                    <small>info@stepstarlogistics.co.ke</small>
-                </div>
-            </div>
-            <hr style='margin:20px 0;'>
-            <table width='100%' cellpadding='8' cellspacing='0' style='font-size:14px;'>
-                <tr><td><strong>Driver:</strong> $driver_name</td><td><strong>National ID:</strong> $driver_id</td></tr>
-                <tr><td><strong>Shipment No:</strong> $shipment_number</td><td><strong>Customer:</strong> $customer_source</td></tr>
-                <tr><td><strong>From:</strong> $from_location</td><td><strong>To:</strong> $to_location</td></tr>
-                <tr><td><strong>Vehicle:</strong> $vehicle_reg</td><td><strong>Distance:</strong> $distance_km KM</td></tr>
-                <tr><td><strong>Weight:</strong> $net_weight tonnes</td><td><strong>Rate:</strong> KES $base_rate</td></tr>
-                <tr><td><strong>VAT:</strong> 16%</td><td><strong>Total:</strong> KES " . number_format($amount, 2) . "</td></tr>
-            </table>
-            <br><p style='text-align:right;'>Generated on " . date('Y-m-d H:i') . "</p>
-        </div>";
+// VAT and Total calculations
+$vat_amount = $amount - ($amount / 1.16);
+$amount_ex_vat = $amount - $vat_amount;
+$total = $amount;
 
-        if (!is_dir(__DIR__ . '/invoices')) {
-            mkdir(__DIR__ . '/invoices', 0777, true);
-        }
+// HTML Invoice
+$invoiceHTML = "
+<div style='font-family: Arial, sans-serif; font-size:13px;'>
+    <table width='100%' style='border-bottom:2px solid #005baa;'>
+        <tr>
+            <td><img src='" . __DIR__ . "/images/LOGISTICS LOGO-1.png' height='80'></td>
+            <td align='right'>
+                <h2 style='margin:0;color:#005baa;'>STEPSTAR LOGISTICS LTD</h2>
+                <p style='margin:2px;'>P.O BOX 515-20106, NAKURU - KENYA</p>
+                <p style='margin:2px;'>+254 710 987 658 | smart360movers@gmail.com</p>
+            </td>
+        </tr>
+    </table>
 
-        $mpdf->WriteHTML($invoiceHTML);
-        $pdfPath = __DIR__ . "/invoices/invoice_{$shipment_number}.pdf";
-        $mpdf->Output($pdfPath, \Mpdf\Output\Destination::FILE);
+    <h3 style='text-align:center; margin-top:15px;'>INVOICE</h3>
+
+    <table width='100%' style='margin-top:20px;' cellpadding='5'>
+        <tr>
+            <td><strong>Invoice No:</strong> {$shipment_number}</td>
+            <td><strong>Date:</strong> " . date('Y-m-d') . "</td>
+        </tr>
+        <tr>
+            <td><strong>Customer:</strong> " . htmlspecialchars($customer_source) . "</td>
+            <td><strong>Driver:</strong> " . htmlspecialchars($driver_name) . " (ID: {$driver_id})</td>
+        </tr>
+        <tr>
+            <td><strong>From:</strong> {$from_location}</td>
+            <td><strong>To:</strong> {$to_location}</td>
+        </tr>
+        <tr>
+            <td><strong>Vehicle Reg:</strong> {$vehicle_reg}</td>
+            <td><strong>Distance:</strong> {$distance_km} KM</td>
+        </tr>
+    </table>
+
+    <table width='100%' border='1' cellspacing='0' cellpadding='6' style='margin-top:20px; border-collapse: collapse; font-size:13px;'>
+        <thead style='background:#f2f2f2;'>
+            <tr>
+                <th>Description</th>
+                <th>Net Weight (Tonnes)</th>
+                <th>Rate/Tonne (KES)</th>
+                <th>Amount (KES)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{$from_location} → {$to_location}</td>
+                <td>{$net_weight}</td>
+                <td>" . number_format($base_rate, 2) . "</td>
+                <td>" . number_format($amount_ex_vat, 2) . "</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table width='100%' style='margin-top:15px; font-size:14px;'>
+        <tr>
+            <td width='75%' align='right'><strong>Amount:</strong></td>
+            <td align='right'>KES " . number_format($amount_ex_vat, 2) . "</td>
+        </tr>
+        <tr>
+            <td align='right'><strong>VAT (16%):</strong></td>
+            <td align='right'>KES " . number_format($vat_amount, 2) . "</td>
+        </tr>
+        <tr>
+            <td align='right'><strong>Total:</strong></td>
+            <td align='right'><strong>KES " . number_format($total, 2) . "</strong></td>
+        </tr>
+    </table>
+
+    <p style='text-align:center; margin-top:40px;'>Thank you for doing business with Stepstar Logistics Ltd.</p>
+</div>";
+
+// Ensure invoices directory exists
+$invoiceDir = __DIR__ . "/invoices";
+if (!is_dir($invoiceDir)) {
+    mkdir($invoiceDir, 0777, true);
+}
+
+// Save the PDF
+$pdfPath = $invoiceDir . "/invoice_{$shipment_number}.pdf";
+$mpdf->WriteHTML($invoiceHTML);
+$mpdf->Output($pdfPath, \Mpdf\Output\Destination::FILE);
+
     }
 
     $success = true;

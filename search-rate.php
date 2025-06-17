@@ -3,7 +3,7 @@ session_start();
 header('Content-Type: application/json');
 include 'includes/db.php';
 
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'DRIVER') {
+if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['DRIVER', 'MANAGER'])) {
     echo json_encode(['found' => false, 'error' => 'Not authorized']);
     exit;
 }

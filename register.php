@@ -111,17 +111,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     .title {
-      position: absolute;
-      top: 30px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      color: white;
-      font-size: 28px;
-      font-weight: bold;
-      z-index: 1;
-      text-shadow: 2px 2px 8px #000;
-    }
+  position: absolute;
+  top: 30px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  z-index: 1;
+  text-shadow: 2px 2px 8px #000;
+  pointer-events: none;
+}
+
 
     @media (max-width: 600px) {
       .container {
@@ -135,11 +137,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </style>
 </head>
 <body>
+  <div class="page-wrapper">
+
   <div class="overlay"></div>
   <div class="title">STEPSTAR LOGISTICS LIMITED</div>
 
   <div class="container">
-    <h2>📝 Register</h2>
+    <h2 style="margin-top: 40px;">📝 Register</h2>
     <?= $message ?>
     <form method="POST" action="">
       <input type="text" name="name" placeholder="Name" required><br>
@@ -155,5 +159,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <button type="submit">Register</button>
     </form>
   </div>
+  <?php include 'includes/footer.php'; ?>
+</div> <!-- end of page-wrapper -->
+</body>
+
 </body>
 </html>
+
+

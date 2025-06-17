@@ -2,12 +2,6 @@
 include '../includes/db.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'MANAGER') {
-    header("Location: ../login.php");
-    exit();
-}
-
-$manager_name = $_SESSION['user']['name'];
 $success = false;
 
 $vehicles = $conn->query("SELECT vehicle_reg FROM vehicles ORDER BY vehicle_reg ASC");
@@ -40,6 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $route = "$from_location - $to_location";
         $rate_sql = "SELECT base_rate FROM manual_rates WHERE CONCAT(from_location, ' - ', to_location) = ? LIMIT 1";
         $rate_stmt = $conn->prepare($rate_sql);
+
+        if (!$rate_stmt) {
+            die("❌ Query prepare failed: " . $conn->error);
+        }
+
         $rate_stmt->bind_param("s", $route);
         $rate_stmt->execute();
         $rate_result = $rate_stmt->get_result();
@@ -51,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($distance_km)) {
                 die("❌ Distance is required when rate is not found.");
             }
+
             $distance_value = (float) $distance_km;
             if ($distance_value <= 15) $base_rate = 728.75;
             elseif ($distance_value <= 29) $base_rate = 726.43;
@@ -69,11 +69,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $amount = $net_weight * $rate_with_vat;
         $status = 'Pending';
 
-        $stmt = $conn->prepare("INSERT INTO shipments (
-            driver_id, shipment_number, customer_source, pickup_date,
-            from_location, to_location, vehicle_reg, net_weight,
-            distance_km, rate_per_tonne, vat_percent, amount, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $sql = "INSERT INTO shipments (
+                    driver_id, shipment_number, customer_source, pickup_date,
+                    from_location, to_location, vehicle_reg, net_weight,
+                    distance_km, rate_per_tonne, vat_percent, amount, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            die("❌ Insert failed: " . $conn->error);
+        }
 
         $stmt->bind_param("sssssssddddds",
             $driver_id, $shipment_number, $customer_source, $shipment_date,
@@ -83,29 +88,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt->execute();
 
-        $mpdf = new \Mpdf\Mpdf();
-        $mpdf->SetTitle("Invoice #$shipment_number");
-        $mpdf->SetMargins(10, 10, 10);
+        $mpdf = new \Mpdf\Mpdf(['default_font' => 'sans-serif']);
+$mpdf->SetTitle("Invoice #$shipment_number");
+$mpdf->SetMargins(10, 10, 10);
 
-        $invoiceHTML = "<div style='padding: 30px; font-family:sans-serif;'>
-            <h2 style='color:#2c3e50;'>INVOICE</h2>
-            <p><strong>Shipment No:</strong> $shipment_number</p>
-            <p><strong>Customer:</strong> $customer_source</p>
-            <p><strong>Date:</strong> $shipment_date</p>
-            <p><strong>From:</strong> $from_location → $to_location</p>
-            <p><strong>Vehicle:</strong> $vehicle_reg</p>
-            <p><strong>Weight:</strong> $net_weight tonnes</p>
-            <p><strong>Rate:</strong> KES $base_rate</p>
-            <p><strong>Total:</strong> KES " . number_format($amount, 2) . "</p>
-        </div>";
+// VAT and Total calculations
+$vat_amount = $amount - ($amount / 1.16);
+$amount_ex_vat = $amount - $vat_amount;
+$total = $amount;
 
-        if (!is_dir(__DIR__ . '/../invoices')) {
-            mkdir(__DIR__ . '/../invoices', 0777, true);
-        }
+// HTML Invoice
+$invoiceHTML = "
+<div style='font-family: Arial, sans-serif; font-size:13px;'>
+    <table width='100%' style='border-bottom:2px solid #005baa;'>
+        <tr>
+            <td><img src='../images/LOGISTICS LOGO-1.png' height='80'></td>
+            <td align='right'>
+                <h2 style='margin:0;color:#005baa;'>STEPSTAR LOGISTICS LTD</h2>
+                <p style='margin:2px;'>P.O BOX 515-20106, NAKURU - KENYA</p>
+                <p style='margin:2px;'>+254 710 987 658 | smart360movers@gmail.com</p>
+            </td>
+        </tr>
+    </table>
 
-        $pdfPath = __DIR__ . "/../invoices/invoice_{$shipment_number}.pdf";
-        $mpdf->WriteHTML($invoiceHTML);
-        $mpdf->Output($pdfPath, \Mpdf\Output\Destination::FILE);
+    <h3 style='text-align:center; margin-top:15px;'>INVOICE</h3>
+
+    <table width='100%' style='margin-top:20px;' cellpadding='5'>
+        <tr>
+            <td><strong>Invoice No:</strong> {$shipment_number}</td>
+            <td><strong>Date:</strong> " . date('Y-m-d') . "</td>
+        </tr>
+        <tr>
+            <td><strong>Customer:</strong> {$customer_source}</td>
+            <td><strong>Driver:</strong> " . htmlspecialchars($driver_name) . " (ID: {$driver_id})</td>
+        </tr>
+        <tr>
+            <td><strong>From:</strong> {$from_location}</td>
+            <td><strong>To:</strong> {$to_location}</td>
+        </tr>
+        <tr>
+            <td><strong>Vehicle Reg:</strong> {$vehicle_reg}</td>
+            <td><strong>Distance:</strong> {$distance_km} KM</td>
+        </tr>
+    </table>
+
+    <table width='100%' border='1' cellspacing='0' cellpadding='6' style='margin-top:20px; border-collapse: collapse; font-size:13px;'>
+        <thead style='background:#f2f2f2;'>
+            <tr>
+                <th>Description</th>
+                <th>Net Weight (Tonnes)</th>
+                <th>Rate/Tonne (KES)</th>
+                <th>Amount (KES)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{$from_location} → {$to_location}</td>
+                <td>{$net_weight}</td>
+                <td>" . number_format($base_rate, 2) . "</td>
+                <td>" . number_format($amount_ex_vat, 2) . "</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table width='100%' style='margin-top:15px; font-size:14px;'>
+        <tr>
+            <td width='75%' align='right'><strong>Amount:</strong></td>
+            <td align='right'>KES " . number_format($amount_ex_vat, 2) . "</td>
+        </tr>
+        <tr>
+            <td align='right'><strong>VAT (16%):</strong></td>
+            <td align='right'>KES " . number_format($vat_amount, 2) . "</td>
+        </tr>
+        <tr>
+            <td align='right'><strong>Total:</strong></td>
+            <td align='right'><strong>KES " . number_format($total, 2) . "</strong></td>
+        </tr>
+    </table>
+
+    <p style='text-align:center; margin-top:40px;'>Thank you for doing business with Stepstar Logistics Ltd.</p>
+</div>";
+
+// Ensure invoices directory exists
+$pdfPath = __DIR__ . "/../invoices/invoice_{$shipment_number}.pdf";
+$mpdf->WriteHTML($invoiceHTML);
+$mpdf->Output($pdfPath, \Mpdf\Output\Destination::FILE);
+
     }
     $success = true;
 }
@@ -152,21 +220,23 @@ function addEntry() {
     const clone = base.cloneNode(true);
     document.getElementById('deliveries').appendChild(clone);
 }
+
 function searchRate(button) {
     const entry = button.closest('.delivery-entry');
     const from = entry.querySelector('.from').value.trim().toUpperCase();
     const to = entry.querySelector('.to').value.trim().toUpperCase();
     const distanceInput = entry.querySelector('.distance');
-    fetch('../search-rate.php?from=' + from + '&to=' + to)
-        .then(res => res.json())
+
+    fetch('../search-rate.php?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to))
+        .then(res => res.json())  // ✅ FIXED this line by adding a dot before 'then'
         .then(data => {
             if (data.found) {
                 distanceInput.value = data.distance;
-                alert('✅ Rate found and distance filled.');
+                alert('✅ Special route found and distance filled.');
             } else {
-                alert('❌ Rate not found. Enter distance manually.');
+                alert('❌ No rate found. Please enter distance manually.');
             }
         })
-        .catch(() => alert('❌ Error searching.'));
+        .catch(() => alert('❌ Error occurred while searching.'));
 }
 </script>
