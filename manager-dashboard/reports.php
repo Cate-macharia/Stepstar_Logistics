@@ -114,7 +114,7 @@ $topCustomer = $topCustomerRes->fetch_assoc();
         }
         .charts-container { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 30px; justify-content: center; }
         .chart-box {
-            flex: 1; min-width: 300px; max-width: 400px; height: 300px;
+            flex: 1; min-width: 350px; max-width: 450px; height: 360px;
             background: #fff; padding: 15px;
             border: 1px solid #ddd; border-radius: 10px;
         }
@@ -122,16 +122,41 @@ $topCustomer = $topCustomerRes->fetch_assoc();
             display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between;
         }
         ul { padding-left: 20px; }
-        h2, h3 { margin-top: 20px; }
+        h2, h3 { margin-top: 5px; }
+        .report-buttons {
+            margin: 20px 0;
+        }
+        .dropdown {
+            position: relative; display: inline-block;
+        }
+        .dropdown-content {
+            display: none; position: absolute;
+            background-color: #f9f9f9; min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .dropdown-content a {
+            color: black; padding: 12px 16px;
+            text-decoration: none; display: block;
+        }
+        .dropdown-content a:hover { background-color: #f1f1f1; }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown:hover .dropbtn { background-color: #555; }
+        .dropbtn {
+            background-color: #333; color: white;
+            padding: 8px 16px; font-size: 16px;
+            border: none; cursor: pointer;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
+    <img src="../images/LOGISTICS LOGO-1.png" height="80">
     <h2>📊 Financial Reports</h2>
 
-    <form method="GET" action="dashboard-manager.php">
-    <input type="hidden" name="page" value="reports">
-    <label>Filter:</label>
-    <!-- rest of your form -->
+    <form method="GET" action="dashboard-manager.php" class="filters">
+        <input type="hidden" name="page" value="reports">
+        <label>Filter:</label>
         <select name="filter" onchange="toggleRange(this.value)">
             <option value="today" <?= $filter === 'today' ? 'selected' : '' ?>>Today</option>
             <option value="week" <?= $filter === 'week' ? 'selected' : '' ?>>This Week</option>
@@ -142,6 +167,19 @@ $topCustomer = $topCustomerRes->fetch_assoc();
         <input type="date" name="to" value="<?= $to ?>" <?= $filter === 'range' ? '' : 'disabled' ?>>
         <button type="submit">Apply</button>
     </form>
+
+    <div class="dropdown report-buttons">
+        <button class="dropbtn">📁 Generate PDF Report</button>
+        <div class="dropdown-content">
+            <a href="generate-reports.php?type=orders&status=Pending" target="_blank">Pending Orders</a>
+            <a href="generate-reports.php?type=orders&status=In Progress" target="_blank">In Progress Orders</a>
+            <a href="generate-reports.php?type=orders&status=Delivered" target="_blank">Delivered Orders</a>
+            <a href="generate-reports.php?type=orders&status=All" target="_blank">All Orders</a>
+            <a href="generate-reports.php?type=expenses" target="_blank">Expense Report</a>
+            <a href="generate-reports.php?type=profit" target="_blank">Profit Report</a>
+
+        </div>
+    </div>
 
     <div class="card">💰 Income: KES <?= number_format($income, 2) ?></div>
     <div class="card">💸 Expenses: KES <?= number_format($expenses, 2) ?></div>

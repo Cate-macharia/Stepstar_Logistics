@@ -4,8 +4,9 @@ include '../includes/db.php';
 $filter = $_GET['filter'] ?? 'all';
 $from_date = $_GET['from'] ?? '';
 $to_date = $_GET['to'] ?? '';
+$paidFilter = isset($_GET['paid']) ? " AND paid = " . intval($_GET['paid']) : "";
 
-$whereClause = "1"; // always true
+$whereClause = "1";
 if ($filter === 'today') {
     $whereClause = "DATE(pickup_date) = CURDATE()";
 } elseif ($filter === 'week') {
@@ -16,8 +17,11 @@ if ($filter === 'today') {
     $whereClause = "pickup_date BETWEEN '$from_date' AND '$to_date'";
 }
 
-$sql = "SELECT * FROM shipments WHERE $whereClause ORDER BY pickup_date DESC";
-$result = mysqli_query($conn, $sql);
+$query = "SELECT * FROM shipments WHERE $whereClause $paidFilter ORDER BY pickup_date DESC";
+$result = mysqli_query($conn, $query);
+$archivedFilter = isset($_GET['archived']) ? " AND archived = " . intval($_GET['archived']) : "";
+$query = "SELECT * FROM shipments WHERE $whereClause $paidFilter $archivedFilter ORDER BY pickup_date DESC";
+
 ?>
 
 <h2>📋 All Orders</h2>
@@ -40,6 +44,20 @@ $result = mysqli_query($conn, $sql);
     <button type="submit">🔍 Apply</button>
 </form>
 
+<form method="GET">
+    <input type="hidden" name="page" value="view-orders">
+    <label>Show:</label>
+    <select name="paid" onchange="this.form.submit()">
+        <option value="">All</option>
+        <option value="0" <?= ($_GET['paid'] ?? '') === '0' ? 'selected' : '' ?>>Unpaid</option>
+        <option value="1" <?= ($_GET['paid'] ?? '') === '1' ? 'selected' : '' ?>>Paid</option>
+    </select>
+</form>
+
+<a href="archived-orders.php" class="btn" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; float: right;">🗃 View Archived Orders</a>
+<div style="clear: both;"></div>
+
+
 <table border="1" cellpadding="10" cellspacing="0" width="100%">
     <tr>
         <th>Date</th>
@@ -49,7 +67,7 @@ $result = mysqli_query($conn, $sql);
         <th>Route</th>
         <th>Vehicle</th>
         <th>Status</th>
-        <th>✅ Verify</th>
+        <th>💰 Paid</th>
         <th>✏️ Edit</th>
         <th>📄 Invoice</th>
     </tr>
@@ -67,14 +85,15 @@ $result = mysqli_query($conn, $sql);
             <td><?= htmlspecialchars($row['vehicle_reg']) ?: 'N/A' ?></td>
             <td><?= htmlspecialchars($row['status']) ?></td>
             <td>
-                <form method="POST" action="verify_order.php">
-                    <input type="hidden" name="shipment_id" value="<?= $row['id'] ?>">
-                    <input type="checkbox" name="verified" onchange="this.form.submit()" />
-                </form>
+                <button 
+    onclick="markAsPaid(<?= $row['id'] ?>, this)" 
+    style="background:<?= $row['paid'] ? '#5cb85c' : '#f0ad4e' ?>;color:white;border:none;padding:5px 10px;border-radius:4px;"
+    <?= $row['paid'] ? 'disabled' : '' ?>>
+    <?= $row['paid'] ? '✔ Paid' : '💰 Mark Paid' ?>
+</button>
+
             </td>
-            <td>
-                <a href="edit_order.php?id=<?= $row['id'] ?>">✏️</a>
-            </td>
+            <td><a href="edit-order.php?id=<?= $row['id'] ?>">✏️</a></td>
             <td>
                 <?php 
                 $invoicePath = "../invoices/invoice_{$row['shipment_number']}.pdf";
@@ -93,5 +112,44 @@ $result = mysqli_query($conn, $sql);
 <script>
 function toggleRange(value) {
     document.getElementById('range').style.display = value === 'range' ? 'inline' : 'none';
+}
+function markAsPaid(id, button) {
+    if (!confirm("Confirm marking as paid?")) return;
+
+    fetch('mark-paid.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'shipment_id=' + encodeURIComponent(id)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            button.textContent = '✔ Paid';
+            button.style.background = '#5cb85c';
+            button.disabled = true;
+        } else {
+            alert("Failed to update: " + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(() => alert("❌ Network or server error."));
+}
+
+function archiveOrder(id, button) {
+    if (!confirm("Archive this paid order?")) return;
+
+    fetch('archive-order.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'shipment_id=' + encodeURIComponent(id)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            button.outerHTML = '<span style="color:green;">Archived</span>';
+        } else {
+            alert("❌ Error: " + (data.error || 'Failed to archive'));
+        }
+    })
+    .catch(() => alert("❌ Network error."));
 }
 </script>
