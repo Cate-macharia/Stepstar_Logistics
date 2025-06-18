@@ -10,6 +10,8 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'DRIVER') {
 $driver_name = $_SESSION['user']['name'];
 $national_id = $_SESSION['user']['national_id'];
 $page = $_GET['page'] ?? 'home';
+
+
 ?>
 
 <!DOCTYPE html>
@@ -17,7 +19,7 @@ $page = $_GET['page'] ?? 'home';
 <head>
     <meta charset="UTF-8">
     <title>Driver Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="manager-dashboard/dashboard.css">
 </head>
 <body>
 

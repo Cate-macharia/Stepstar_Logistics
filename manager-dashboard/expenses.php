@@ -15,12 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
     $specific_type = $_POST['specific_type'] ?? '';
     $description = trim($_POST['description']);
     $amount = floatval($_POST['amount']);
-    $vehicle_id = ($type === 'vehicle') ? intval($_POST['vehicle_id']) : null;
-    $driver_id = ($type === 'driver') ? intval($_POST['driver_id']) : null;
+    $vehicle_id = !empty($_POST['vehicle_id']) ? intval($_POST['vehicle_id']) : null;
+    $driver_id  = !empty($_POST['driver_id'])  ? intval($_POST['driver_id']) : null;
 
-    if ($amount > 0) {
-        $stmt = $conn->prepare("INSERT INTO expenses (type, specific_type, description, amount, vehicle_id, driver_id) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssddi", $type, $specific_type, $description, $amount, $vehicle_id, $driver_id);
+if ($amount > 0) {
+    $stmt = $conn->prepare("INSERT INTO expenses (type, specific_type, description, amount, vehicle_id, driver_id) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssddi", $type, $specific_type, $description, $amount, $vehicle_id, $driver_id);
         if ($stmt->execute()) {
             header("Location: dashboard-manager.php?page=expenses&success=1&filter=$filter&from=$from&to=$to");
             exit();
@@ -51,7 +51,15 @@ if ($filter === 'today') {
 }
 $whereClause = count($whereParts) ? implode(" AND ", $whereParts) : "1";
 
-$expenses = $conn->query("SELECT * FROM expenses WHERE $whereClause ORDER BY created_at DESC");
+$expenses = $conn->query("
+    SELECT e.*, u.name AS driver_name
+    FROM expenses e
+    LEFT JOIN users u ON e.driver_id = u.national_id
+    WHERE $whereClause
+    ORDER BY e.created_at DESC
+");
+
+
 $totalResult = $conn->query("SELECT SUM(amount) as total FROM expenses WHERE $whereClause");
 $totalRow = $totalResult->fetch_assoc();
 $totalAmount = $totalRow['total'] ?? 0;
@@ -60,6 +68,101 @@ $vehicles = $conn->query("SELECT id, vehicle_reg FROM vehicles");
 $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRIVER'");
 ?>
 
+<form method="POST" class="expense-form">
+    <div class="form-grid">
+        <div class="form-group">
+            <label>Expense Type</label>
+            <select name="expense_type" required onchange="toggleFields(this.value)">
+                <option value="general" <?= $type === 'general' ? 'selected' : '' ?>>General</option>
+                <option value="vehicle" <?= $type === 'vehicle' ? 'selected' : '' ?>>Vehicle</option>
+                <option value="driver" <?= $type === 'driver' ? 'selected' : '' ?>>Driver</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="vehicleField" style="display:<?= $type === 'vehicle' ? 'block' : 'none' ?>">
+            <label>Vehicle</label>
+            <select name="vehicle_id">
+                <option value="">Select Vehicle</option>
+                <?php while($v = $vehicles->fetch_assoc()): ?>
+                    <option value="<?= $v['id'] ?>" <?= ($vehicle_id == $v['id']) ? 'selected' : '' ?>><?= $v['vehicle_reg'] ?></option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <div class="form-group" id="driverField" style="display:<?= $type === 'driver' ? 'block' : 'none' ?>">
+            <label>Driver</label>
+            <select name="driver_id">
+                <option value="">Select Driver</option>
+                <?php while($d = $drivers->fetch_assoc()): ?>
+                    <option value="<?= $d['id'] ?>" <?= ($driver_id == $d['id']) ? 'selected' : '' ?>><?= $d['name'] ?> (ID: <?= $d['national_id'] ?>)</option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Specific Type</label>
+            <select name="specific_type" id="specificTypeField">
+                <option value="">Select Specific Type</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Description (Optional)</label>
+            <input type="text" name="description" placeholder="Narration or purpose">
+        </div>
+
+        <div class="form-group">
+            <label>Amount</label>
+            <input type="number" name="amount" step="0.01" required placeholder="KES">
+        </div>
+
+        <div class="form-group">
+            <button type="submit" name="add_expense">➕ Add Expense</button>
+        </div>
+    </div>
+</form>
+
+<h2>📋 Expense Records</h2>
+<table class="styled-table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Type</th>
+            <th>Specific</th>
+            <th>Description</th>
+            <th>Vehicle</th>
+            <th>Driver</th>
+            <th>Amount</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php $i = 1; while ($exp = $expenses->fetch_assoc()): ?>
+        <tr>
+           <td><?= $i++ ?></td>
+           <td><?= htmlspecialchars($exp['type']) ?></td>
+           <td><?= htmlspecialchars($exp['specific_type']) ?></td>
+           <td><?= htmlspecialchars($exp['description']) ?></td>
+           <td><?= !empty($exp['vehicle_reg']) ? $exp['vehicle_reg'] : '-' ?></td>
+           <td><?= htmlspecialchars($exp['driver_name'] ?? '-') ?></td>
+           <td>KES <?= number_format($exp['amount'], 2) ?></td>
+           <td><?= $exp['created_at'] ?></td>
+       </tr>
+
+        <?php endwhile; ?>
+        <?php if ($expenses->num_rows === 0): ?>
+        <tr><td colspan="8" style="color:red; text-align:center;">⚠️ No expenses found.</td></tr>
+        <?php endif; ?>
+    </tbody>
+    <tfoot>
+        <tr>
+            <th colspan="6" style="text-align:right;">Total:</th>
+            <th colspan="2">KES <?= number_format($totalAmount, 2) ?></th>
+        </tr>
+    </tfoot>
+</table>
+
+<!-- Styling -->
 <style>
     .expense-form {
         background: #f9f9f9;
@@ -154,89 +257,71 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
         color: #721c24;
         border: 1px solid #f5c6cb;
     }
+    .expense-form {
+        margin-bottom: 30px;
+    }
+    .form-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .form-group {
+        flex: 1 1 200px;
+        display: flex;
+        flex-direction: column;
+    }
+    .form-group select,
+    .form-group input {
+        padding: 8px;
+        margin-top: 4px;
+        font-size: 14px;
+    }
+    .form-group button {
+        padding: 10px 16px;
+        background: #2980b9;
+        color: white;
+        border: none;
+        margin-top: 28px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    .form-group button:hover {
+        background-color: #21689e;
+    }
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-top: 20px;
+    }
+    .styled-table th, .styled-table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #ccc;
+        text-align: left;
+    }
+    .styled-table th {
+        background-color: #f2f2f2;
+    }
 </style>
 
-
-<form method="POST" class="expense-form">
-    <select name="expense_type" required onchange="toggleFields(this.value)">
-        <option value="general" <?= $type === 'general' ? 'selected' : '' ?>>General</option>
-        <option value="vehicle" <?= $type === 'vehicle' ? 'selected' : '' ?>>Vehicle</option>
-        <option value="driver" <?= $type === 'driver' ? 'selected' : '' ?>>Driver</option>
-    </select>
-
-    <select name="vehicle_id" id="vehicleField" style="display:<?= $type === 'vehicle' ? 'block' : 'none' ?>">
-        <option value="">Select Vehicle</option>
-        <?php while($v = $vehicles->fetch_assoc()): ?>
-            <option value="<?= $v['id'] ?>" <?= ($vehicle_id == $v['id']) ? 'selected' : '' ?>><?= $v['vehicle_reg'] ?></option>
-        <?php endwhile; ?>
-    </select>
-
-    <select name="driver_id" id="driverField" style="display:<?= $type === 'driver' ? 'block' : 'none' ?>">
-        <option value="">Select Driver</option>
-        <?php while($d = $drivers->fetch_assoc()): ?>
-            <option value="<?= $d['id'] ?>" <?= ($driver_id == $d['id']) ? 'selected' : '' ?>><?= $d['name'] ?> (ID: <?= $d['national_id'] ?>)</option>
-        <?php endwhile; ?>
-    </select>
-
-    <select name="specific_type" id="specificTypeField">
-        <option value="">Select Specific Expense</option>
-    </select>
-
-    <input type="text" name="description" placeholder="Narration or purpose (optional)">
-    <input type="number" name="amount" placeholder="Amount" step="0.01" required>
-    <button type="submit" name="add_expense">Add Expense</button>
-</form>
-
-<h2>📋 Expense Records</h2>
-<table class="styled-table">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Type</th>
-            <th>Specific</th>
-            <th>Description</th>
-            <th>Amount</th>
-            <th>Date</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php $i = 1; while ($exp = $expenses->fetch_assoc()): ?>
-        <tr>
-            <td><?= $i++ ?></td>
-            <td><?= htmlspecialchars($exp['type']) ?></td>
-            <td><?= htmlspecialchars($exp['specific_type']) ?></td>
-            <td><?= htmlspecialchars($exp['description']) ?></td>
-            <td>KES <?= number_format($exp['amount'], 2) ?></td>
-            <td><?= $exp['created_at'] ?></td>
-        </tr>
-        <?php endwhile; ?>
-        <?php if ($expenses->num_rows === 0): ?>
-        <tr><td colspan="6" style="color:red;">⚠️ No expenses found for this filter.</td></tr>
-        <?php endif; ?>
-    </tbody>
-    <tfoot>
-        <tr>
-            <th colspan="4" style="text-align:right;">Total:</th>
-            <th colspan="2">KES <?= number_format($totalAmount, 2) ?></th>
-        </tr>
-    </tfoot>
-</table>
-
+<!-- JavaScript -->
 <script>
 function toggleFields(type) {
     document.getElementById('vehicleField').style.display = (type === 'vehicle') ? 'block' : 'none';
     document.getElementById('driverField').style.display = (type === 'driver') ? 'block' : 'none';
 
     const specific = document.getElementById('specificTypeField');
-    specific.innerHTML = '';
+    specific.innerHTML = '<option value="">Select Specific Type</option>';
+
     let options = [];
     if (type === 'vehicle') {
         options = ['Insurance', 'Sacco', 'Loan', 'Repairs', 'Tyre Exchange', 'Speed Governor', 'Inspection', 'KENHA', 'Fuel', 'Service', 'Brokerage Fee', 'Contingency Fee'];
     } else if (type === 'driver') {
-        options = ['Others'];
-    } else {
-        options = ['Miscellaneous', 'others'];
+        options = ['Other'];
+    } else if (type === 'general') {
+        options = ['Miscellaneous', 'Others'];
     }
+
     options.forEach(opt => {
         const el = document.createElement('option');
         el.value = opt;
@@ -244,4 +329,11 @@ function toggleFields(type) {
         specific.appendChild(el);
     });
 }
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', () => {
+    const initialType = document.querySelector("select[name='expense_type']").value;
+    toggleFields(initialType);
+});
 </script>
+

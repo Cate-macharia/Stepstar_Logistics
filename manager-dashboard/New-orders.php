@@ -85,7 +85,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $from_location, $to_location, $vehicle_reg, $net_weight,
             $distance_km, $base_rate, $vat_percent, $amount, $status
         );
-
+          // Automatically add millage fee to expenses
+ // Automatically add millage fee to expenses
+$millage_fee = 1000; // fixed amount per trip
+$millage_desc = "Trip on $shipment_date - Auto-recorded";
+$millage_stmt = $conn->prepare("
+    INSERT INTO expenses (type, specific_type, description, amount, driver_id)
+    VALUES ('driver', 'Millage Fee', ?, ?, ?)
+");
+$millage_stmt->bind_param("sdi", $millage_desc, $millage_fee, $driver_id);
+$millage_stmt->execute();
         $stmt->execute();
 
         $mpdf = new \Mpdf\Mpdf(['default_font' => 'sans-serif']);
@@ -96,6 +105,14 @@ $mpdf->SetMargins(10, 10, 10);
 $vat_amount = $amount - ($amount / 1.16);
 $amount_ex_vat = $amount - $vat_amount;
 $total = $amount;
+
+$driver_name = '';
+$getDriver = $conn->prepare("SELECT name FROM users WHERE national_id = ?");
+$getDriver->bind_param("s", $driver_id);
+$getDriver->execute();
+$getDriver->bind_result($driver_name);
+$getDriver->fetch();
+$getDriver->close();
 
 // HTML Invoice
 $invoiceHTML = "

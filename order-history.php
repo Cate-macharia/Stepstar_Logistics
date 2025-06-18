@@ -80,7 +80,7 @@ $result = mysqli_stmt_get_result($stmt);
 
 <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
     <thead>
-        <tr style="background: #f4f4f4;">
+        <tr style="background:rgb(32, 48, 113);">
             <th>Date</th>
             <th>Shipment No</th>
             <th>Route</th>

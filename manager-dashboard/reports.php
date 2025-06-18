@@ -102,7 +102,7 @@ $topCustomer = $topCustomerRes->fetch_assoc();
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .card, .summary-card {
-            background: #f9f9f9; padding: 20px; margin: 10px 0;
+            background:rgb(117, 117, 170); padding: 20px; margin: 10px 0;
             border-radius: 8px; text-align: center;
             font-size: 18px; font-weight: bold;
         }
@@ -122,7 +122,7 @@ $topCustomer = $topCustomerRes->fetch_assoc();
             display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between;
         }
         ul { padding-left: 20px; }
-        h2, h3 { margin-top: 30px; }
+        h2, h3 { margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -181,11 +181,11 @@ $topCustomer = $topCustomerRes->fetch_assoc();
 
     <div class="charts-container">
         <div class="chart-box">
-            <h3>📉 Expense Breakdown</h3>
+            <h3>Expense Breakdown</h3>
             <canvas id="expenseChart"></canvas>
         </div>
         <div class="chart-box">
-            <h3>📊 Income vs Expenses</h3>
+            <h3>Income vs Expenses</h3>
             <canvas id="lineChart"></canvas>
         </div>
     </div>

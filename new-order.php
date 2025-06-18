@@ -3,9 +3,10 @@ include 'includes/db.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'DRIVER') {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit();
 }
+
 
 $driver_name = $_SESSION['user']['name'];
 $driver_id = $_SESSION['user']['national_id'];
@@ -85,7 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $from_location, $to_location, $vehicle_reg, $net_weight,
             $distance_km, $base_rate, $vat_percent, $amount, $status
         );
-
+        // Automatically add millage fee to expenses
+$millage_fee = 1000; // fixed amount per trip
+$millage_stmt = $conn->prepare("INSERT INTO expenses (type, specific_type, description, amount, driver_id) VALUES ('driver', 'Millage Fee', ?, ?, ?)");
+$millage_desc = "Trip on $shipment_date - Auto-recorded";
+$millage_stmt->bind_param("sdi", $millage_desc, $millage_fee, $driver_id);
+$millage_stmt->execute();
         $stmt->execute();
 
        $mpdf = new \Mpdf\Mpdf(['default_font' => 'sans-serif']);
