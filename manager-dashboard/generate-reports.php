@@ -1,4 +1,4 @@
-<?php
+<?php 
 require_once __DIR__ . '/../vendor/autoload.php';
 include '../includes/db.php';
 
@@ -13,25 +13,37 @@ $html = "<div style='font-family:Arial,sans-serif;'>
     <hr>
 ";
 
-$statusTypes = ['pending', 'in_progress', 'delivered'];
+$statusTypes = ['Pending', 'In Progress', 'Delivered', 'Paid', 'Unpaid', 'All'];
 
-if ($type === 'orders' || in_array($type, $statusTypes)) {
-    $statusFilter = ($type === 'orders') ? '' : $type;
-    $query = "SELECT s.*, u.name AS driver_name FROM shipments s LEFT JOIN users u ON s.driver_id = u.national_id";
-    
-    if ($statusFilter) {
-        $query .= " WHERE s.status = '" . $conn->real_escape_string($statusFilter) . "'";
-        $html .= "<h3>Orders Report - Status: " . ucfirst($statusFilter) . "</h3>";
+if ($type === 'orders' && in_array($status, $statusTypes)) {
+    $filterSQL = "";
+
+    if ($status === 'Paid') {
+        $filterSQL = "WHERE s.paid = 1";
+        $html .= "<h3>✅ Paid Orders Report</h3>";
+    } elseif ($status === 'Unpaid') {
+        $filterSQL = "WHERE s.paid = 0";
+        $html .= "<h3>💰 Unpaid Orders Report</h3>";
+    } elseif ($status === 'All') {
+        $filterSQL = "";
+        $html .= "<h3>📋 All Orders Report</h3>";
     } else {
-        $html .= "<h3>All Orders Report</h3>";
+        $filterSQL = "WHERE s.status = '" . $conn->real_escape_string($status) . "'";
+        $html .= "<h3>📦 Orders Report - Status: " . $status . "</h3>";
     }
+
+    $query = "SELECT s.*, u.name AS driver_name 
+              FROM shipments s 
+              LEFT JOIN users u ON s.driver_id = u.national_id 
+              $filterSQL 
+              ORDER BY s.pickup_date DESC";
 
     $result = $conn->query($query);
 
     $html .= "<table width='100%' border='1' cellspacing='0' cellpadding='5' style='border-collapse: collapse;'>
-    <thead><tr style='background:#f2f2f2;'>
-        <th>#</th><th>Shipment No</th><th>Date</th><th>Customer</th><th>Driver</th><th>Vehicle</th><th>From → To</th><th>Status</th><th>Amount</th>
-    </tr></thead><tbody>";
+        <thead><tr style='background:#f2f2f2;'>
+            <th>#</th><th>Shipment No</th><th>Date</th><th>Customer</th><th>Driver</th><th>Vehicle</th><th>From → To</th><th>Status</th><th>Amount</th>
+        </tr></thead><tbody>";
 
     $i = 1; $total = 0;
     while ($row = $result->fetch_assoc()) {
@@ -49,8 +61,9 @@ if ($type === 'orders' || in_array($type, $statusTypes)) {
         $total += $row['amount'];
         $i++;
     }
+
     $html .= "</tbody></table>
-    <p><strong>Total Income: KES " . number_format($total, 2) . "</strong></p>";
+    <p><strong>Total Amount: KES " . number_format($total, 2) . "</strong></p>";
 }
 elseif ($type === 'expenses') {
     $html .= "<h3>Expenses Report</h3>";

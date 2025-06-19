@@ -175,8 +175,11 @@ $topCustomer = $topCustomerRes->fetch_assoc();
             <a href="generate-reports.php?type=orders&status=In Progress" target="_blank">In Progress Orders</a>
             <a href="generate-reports.php?type=orders&status=Delivered" target="_blank">Delivered Orders</a>
             <a href="generate-reports.php?type=orders&status=All" target="_blank">All Orders</a>
+            <a href="generate-reports.php?type=orders&status=Paid" target="_blank">Paid Orders</a>
+            <a href="generate-reports.php?type=orders&status=Unpaid" target="_blank">Unpaid Orders</a>
             <a href="generate-reports.php?type=expenses" target="_blank">Expense Report</a>
             <a href="generate-reports.php?type=profit" target="_blank">Profit Report</a>
+
 
         </div>
     </div>

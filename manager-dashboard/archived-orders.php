@@ -11,7 +11,7 @@ if (!$result) {
 
 
 <h2>🗃 Archived Orders</h2>
-<a href="dashboard-manager.php?page=view-orders" style="text-decoration:none;background:#007bff;color:#fff;padding:6px 12px;border-radius:4px;">⬅ Back to Orders</a>
+<a href="dashboard-manager.php?page=view_orders" style="text-decoration:none;background:#007bff;color:#fff;padding:6px 12px;border-radius:4px;">⬅ Back to Orders</a>
 <br><br>
 
 <table border="1" cellpadding="10" cellspacing="0" width="100%">

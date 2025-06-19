@@ -26,7 +26,8 @@ $query = "SELECT * FROM shipments WHERE $whereClause $paidFilter $archivedFilter
 
 <h2>📋 All Orders</h2>
 
-<form method="GET" style="margin-bottom: 20px;">
+<form method="GET" action="dashboard-manager.php" style="margin-bottom: 20px;">
+    <input type="hidden" name="page" value="view_orders">
     <label>Filter: </label>
     <select name="filter" onchange="toggleRange(this.value)">
         <option value="all" <?= $filter == 'all' ? 'selected' : '' ?>>All</option>
@@ -44,19 +45,11 @@ $query = "SELECT * FROM shipments WHERE $whereClause $paidFilter $archivedFilter
     <button type="submit">🔍 Apply</button>
 </form>
 
-<form method="GET">
-    <input type="hidden" name="page" value="view-orders">
-    <label>Show:</label>
-    <select name="paid" onchange="this.form.submit()">
-        <option value="">All</option>
-        <option value="0" <?= ($_GET['paid'] ?? '') === '0' ? 'selected' : '' ?>>Unpaid</option>
-        <option value="1" <?= ($_GET['paid'] ?? '') === '1' ? 'selected' : '' ?>>Paid</option>
-    </select>
-</form>
+
+
 
 <a href="archived-orders.php" class="btn" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; float: right;">🗃 View Archived Orders</a>
 <div style="clear: both;"></div>
-
 
 <table border="1" cellpadding="10" cellspacing="0" width="100%">
     <tr>

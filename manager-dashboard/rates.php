@@ -106,7 +106,7 @@ $rates = $conn->query("SELECT * FROM manual_rates ORDER BY created_at DESC");
     <style>
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 8px; border-bottom: 1px solid #ccc; }
-        th { background-color: #eee; }
+        th { background-color: #0077cc; }
         .success { color: green; }
         .btn-del { color: red; text-decoration: none; font-weight: bold; }
         .btn-edit { color: blue; text-decoration: none; font-weight: bold; }
