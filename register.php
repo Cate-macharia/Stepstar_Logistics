@@ -3,25 +3,37 @@ include 'includes/db.php';
 
 $message = '';
 
+// ✅ Check if Super Admin exists
+$superAdminExists = false;
+$check = $conn->query("SELECT COUNT(*) as total FROM users WHERE role = 'SUPER_ADMIN'");
+if ($check && $row = $check->fetch_assoc()) {
+    $superAdminExists = $row['total'] > 0;
+}
+
+// ✅ Handle registration
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = $_POST['name'];
     $email = $_POST['email'];
     $role = $_POST['role'];
     $national_id = $_POST['national_id'];
-    $hashed_password = $_POST['password']; // you may later hash this if needed
+    $hashed_password = $_POST['password']; // hash later if needed
 
-    $sql = "INSERT INTO users (name, email, password, role, national_id) VALUES (?, ?, ?, ?, ?)";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "sssss", $name, $email, $hashed_password, $role, $national_id);
-
-    if (mysqli_stmt_execute($stmt)) {
-        $message = "<p style='color: lightgreen; text-align:center;'>✅ Registration successful!</p>";
+    // ✅ Block direct registration of SUPER_ADMIN through UI
+    if ($role === 'SUPER_ADMIN' && $superAdminExists) {
+        $message = "<p style='color: red; text-align:center;'>❌ Super Admin already exists.</p>";
     } else {
-        $message = "<p style='color: red; text-align:center;'>❌ Error: " . mysqli_error($conn) . "</p>";
+        $sql = "INSERT INTO users (name, email, password, role, national_id) VALUES (?, ?, ?, ?, ?)";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "sssss", $name, $email, $hashed_password, $role, $national_id);
+
+        if (mysqli_stmt_execute($stmt)) {
+            $message = "<p style='color: lightgreen; text-align:center;'>✅ Registration successful!</p>";
+        } else {
+            $message = "<p style='color: red; text-align:center;'>❌ Error: " . mysqli_error($conn) . "</p>";
+        }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -152,9 +164,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <input type="password" name="password" placeholder="Password" required><br>
       <select name="role" required>
         <option value="">-- Select Role --</option>
-        <option value="DRIVER">Driver</option>
-        <option value="MANAGER">Manager</option>
-        <option value="ADMIN">Admin</option>
+          <option value="SUPER_ADMIN">Super Admin</option>
       </select><br>
       <button type="submit">Register</button>
     </form>
@@ -165,5 +175,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 </body>
 </html>
+
+
+
 
 

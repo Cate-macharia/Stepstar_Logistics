@@ -52,12 +52,14 @@ if ($filter === 'today') {
 $whereClause = count($whereParts) ? implode(" AND ", $whereParts) : "1";
 
 $expenses = $conn->query("
-    SELECT e.*, u.name AS driver_name
+    SELECT e.*, u.name AS driver_name, v.vehicle_reg
     FROM expenses e
     LEFT JOIN users u ON e.driver_id = u.national_id
+    LEFT JOIN vehicles v ON e.vehicle_id = v.id
     WHERE $whereClause
     ORDER BY e.created_at DESC
 ");
+
 
 
 $totalResult = $conn->query("SELECT SUM(amount) as total FROM expenses WHERE $whereClause");

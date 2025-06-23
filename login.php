@@ -4,6 +4,8 @@ include 'includes/db.php';
 
 $message = '';
 
+
+
 if (isset($_GET['message']) && $_GET['message'] === 'loggedout') {
     $message = "<p style='color: lightgreen; text-align:center;'>✅ You have been logged out successfully.</p>";
 }
@@ -20,14 +22,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user = mysqli_fetch_assoc($result);
 
     if ($user && $password === $user['password']) {
-        $_SESSION['user'] = $user;
-
+        $_SESSION['user']['tenant_id'] = $user['tenant_id'];
+        
         if ($user['role'] === 'DRIVER') {
             header("Location: dashboard-driver.php");
         } elseif ($user['role'] === 'MANAGER') {
             header("Location: manager-dashboard/dashboard-manager.php");
-        } elseif ($user['role'] === 'ADMIN') {
-            header("Location: admin-dashboard.php");
+        } elseif ($user['role'] === 'SUPER_ADMIN') {
+            header("Location: super_admin_dashboard.php");
         }
         exit();
     } else {

@@ -151,7 +151,7 @@ $topCustomer = $topCustomerRes->fetch_assoc();
     </style>
 </head>
 <body>
-    <img src="../images/LOGISTICS LOGO-1.png" height="80">
+
     <h2>📊 Financial Reports</h2>
 
     <form method="GET" action="dashboard-manager.php" class="filters">
@@ -195,29 +195,7 @@ $topCustomer = $topCustomerRes->fetch_assoc();
         <div class="summary-card">✅ Delivered: <?= $statusSummary['Delivered'] ?></div>
     </div>
 
-    <div class="summary-boxes">
-        <div class="summary-card" style="flex-basis: 100%; text-align: left;">
-            <h3>🚚 Top 5 Most Frequent Routes</h3>
-            <ul>
-                <?php foreach ($topRoutes as $route): ?>
-                    <li><?= $route['route'] ?> - <?= $route['trips'] ?> trips</li>
-                <?php endforeach; ?>
-                <?php if (empty($topRoutes)): ?>
-                    <li>No routes found for selected filter.</li>
-                <?php endif; ?>
-            </ul>
-        </div>
-    </div>
-
-    <div class="summary-boxes">
-        <div class="summary-card">
-            🚛 Most Profitable Vehicle:<br>
-            <?= $topVehicle ? $topVehicle['vehicle_reg'] . " - KES " . number_format($topVehicle['total_income'], 2) : "No data available." ?>
-        </div>
-        <div class="summary-card">
-            👥 Most Frequent Customer:<br>
-            <?= $topCustomer ? $topCustomer['customer_source'] . " - " . $topCustomer['orders'] . " orders" : "No customer data found." ?>
-        </div>
+        
     </div>
 
     <div class="charts-container">

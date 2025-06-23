@@ -8,8 +8,8 @@ $status = $_GET['status'] ?? '';
 $mpdf = new \Mpdf\Mpdf();
 $mpdf->SetTitle("Stepstar Logistics Report");
 $html = "<div style='font-family:Arial,sans-serif;'>
-    <img src='../images/LOGISTICS LOGO-1.png' height='60'>
-    <h2 style='color:#005baa;'>STEPSTAR LOGISTICS LTD - Report</h2>
+    <img src='../images/LOGISTICS LOGO-1.png' height='80'>
+   <h2 style='color:#005baa; text-align: center;'>STEPSTAR LOGISTICS LTD - Report</h2>
     <hr>
 ";
 

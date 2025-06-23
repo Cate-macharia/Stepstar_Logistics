@@ -5,6 +5,7 @@ $filter = $_GET['filter'] ?? 'all';
 $from_date = $_GET['from'] ?? '';
 $to_date = $_GET['to'] ?? '';
 $paidFilter = isset($_GET['paid']) ? " AND paid = " . intval($_GET['paid']) : "";
+$archived = isset($_GET['archived']) && $_GET['archived'] == '1';
 
 $whereClause = "1";
 if ($filter === 'today') {
@@ -17,14 +18,16 @@ if ($filter === 'today') {
     $whereClause = "pickup_date BETWEEN '$from_date' AND '$to_date'";
 }
 
-$query = "SELECT * FROM shipments WHERE $whereClause $paidFilter ORDER BY pickup_date DESC";
-$result = mysqli_query($conn, $query);
-$archivedFilter = isset($_GET['archived']) ? " AND archived = " . intval($_GET['archived']) : "";
-$query = "SELECT * FROM shipments WHERE $whereClause $paidFilter $archivedFilter ORDER BY pickup_date DESC";
+// Compose query now that filters are defined
+$query = "SELECT * FROM shipments WHERE $whereClause $paidFilter";
+$query .= $archived ? " AND archived = 1" : " AND (archived IS NULL OR archived = 0)";
+$query .= " ORDER BY pickup_date DESC";
 
+
+$result = mysqli_query($conn, $query);
 ?>
 
-<h2>📋 All Orders</h2>
+<h2>📋 <?= $archived ? 'Archived' : 'All' ?> Orders</h2>
 
 <form method="GET" action="dashboard-manager.php" style="margin-bottom: 20px;">
     <input type="hidden" name="page" value="view_orders">
@@ -45,10 +48,9 @@ $query = "SELECT * FROM shipments WHERE $whereClause $paidFilter $archivedFilter
     <button type="submit">🔍 Apply</button>
 </form>
 
-
-
-
-<a href="archived-orders.php" class="btn" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; float: right;">🗃 View Archived Orders</a>
+<a href="dashboard-manager.php?page=view_orders&archived=<?= $archived ? '0' : '1' ?>" class="btn" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; float: right;">
+    <?= $archived ? '⬅ Back to Active Orders' : '🗃 View Archived Orders' ?>
+</a>
 <div style="clear: both;"></div>
 
 <table border="1" cellpadding="10" cellspacing="0" width="100%">
@@ -79,12 +81,11 @@ $query = "SELECT * FROM shipments WHERE $whereClause $paidFilter $archivedFilter
             <td><?= htmlspecialchars($row['status']) ?></td>
             <td>
                 <button 
-    onclick="markAsPaid(<?= $row['id'] ?>, this)" 
-    style="background:<?= $row['paid'] ? '#5cb85c' : '#f0ad4e' ?>;color:white;border:none;padding:5px 10px;border-radius:4px;"
-    <?= $row['paid'] ? 'disabled' : '' ?>>
-    <?= $row['paid'] ? '✔ Paid' : '💰 Mark Paid' ?>
-</button>
-
+                    onclick="markAsPaid(<?= $row['id'] ?>, this)" 
+                    style="background:<?= $row['paid'] ? '#5cb85c' : '#f0ad4e' ?>;color:white;border:none;padding:5px 10px;border-radius:4px;"
+                    <?= $row['paid'] ? 'disabled' : '' ?>>
+                    <?= $row['paid'] ? '✔ Paid' : '💰 Mark Paid' ?>
+                </button>
             </td>
             <td><a href="edit-order.php?id=<?= $row['id'] ?>">✏️</a></td>
             <td>
@@ -106,6 +107,7 @@ $query = "SELECT * FROM shipments WHERE $whereClause $paidFilter $archivedFilter
 function toggleRange(value) {
     document.getElementById('range').style.display = value === 'range' ? 'inline' : 'none';
 }
+
 function markAsPaid(id, button) {
     if (!confirm("Confirm marking as paid?")) return;
 
@@ -125,24 +127,5 @@ function markAsPaid(id, button) {
         }
     })
     .catch(() => alert("❌ Network or server error."));
-}
-
-function archiveOrder(id, button) {
-    if (!confirm("Archive this paid order?")) return;
-
-    fetch('archive-order.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'shipment_id=' + encodeURIComponent(id)
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            button.outerHTML = '<span style="color:green;">Archived</span>';
-        } else {
-            alert("❌ Error: " + (data.error || 'Failed to archive'));
-        }
-    })
-    .catch(() => alert("❌ Network error."));
 }
 </script>

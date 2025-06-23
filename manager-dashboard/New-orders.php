@@ -121,7 +121,7 @@ $invoiceHTML = "
         <tr>
             <td><img src='../images/LOGISTICS LOGO-1.png' height='80'></td>
             <td align='right'>
-                <h2 style='margin:0;color:#005baa;'>STEPSTAR LOGISTICS LTD</h2>
+                <h2 style='color:#005baa; text-align: center;'>STEPSTAR LOGISTICS LTD - Report</h2>
                 <p style='margin:2px;'>P.O BOX 515-20106, NAKURU - KENYA</p>
                 <p style='margin:2px;'>+254 710 987 658 | smart360movers@gmail.com</p>
             </td>
