@@ -1,62 +1,57 @@
 <?php
-// super_admin_dashboard.php
 session_start();
-include '../includes/db.php';
-
-// Check if user is super admin
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'SUPER_ADMIN') {
     header("Location: ../login.php");
     exit();
 }
 
-// Fetch tenants
-$tenants = $conn->query("SELECT * FROM tenants ORDER BY created_at DESC");
-
+include '../includes/db.php';
+$admin_name = $_SESSION['user']['name'];
+$page = $_GET['page'] ?? 'home';
 ?>
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Super Admin Dashboard</title>
-    <style>
-        body { font-family: Arial; margin: 20px; }
-        h2 { color: #005baa; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-        th { background: #f2f2f2; }
-        .btn { padding: 6px 12px; background: #005baa; color: white; border: none; border-radius: 4px; text-decoration: none; }
-        .btn:hover { background: #003f7f; }
-    </style>
+     <link rel="stylesheet" href="../manager-dashboard/dashboard.css">
 </head>
 <body>
-    <h2>👑 Super Admin - Manage Tenants</h2>
 
-    <a href="register_tenant.php" class="btn">➕ Register New Tenant</a>
-    <br><br>
+<div class="wrapper">
+    <aside class="sidebar">
+        <div style="text-align: center; padding: 0; background: transparent; margin: 20px auto; width: 130px;">
+  <img src="../images/flex-logo.jpg" alt="Flexbyte Logo" style="width: 120px; height: auto; display: block; margin: 0 auto; border-radius: 0; box-shadow: none;">
+</div>
 
-    <table>
-        <tr>
-            <th>#</th>
-            <th>Business Name</th>
-            <th>Owner</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Date Registered</th>
-            <th>Actions</th>
-        </tr>
-        <?php $i = 1; while ($tenant = $tenants->fetch_assoc()): ?>
-        <tr>
-            <td><?= $i++ ?></td>
-            <td><?= htmlspecialchars($tenant['business_name']) ?></td>
-            <td><?= htmlspecialchars($tenant['owner_name']) ?></td>
-            <td><?= htmlspecialchars($tenant['email']) ?></td>
-            <td><?= htmlspecialchars($tenant['phone']) ?></td>
-            <td><?= htmlspecialchars($tenant['created_at']) ?></td>
-            <td>
-                <a class="btn" href="view_tenant_data.php?id=<?= $tenant['id'] ?>">🔍 View</a>
-                <a class="btn" style="background:#d9534f" href="delete_tenant.php?id=<?= $tenant['id'] ?>" onclick="return confirm('Delete this tenant?')">🗑 Delete</a>
-            </td>
-        </tr>
-        <?php endwhile; ?>
-    </table>
+
+        <p>Welcome, <?= htmlspecialchars($admin_name) ?></p>
+        <nav>
+            <ul>
+                <li><a href="super_admin_dashboard.php?page=home">🏠 Home</a></li>
+                <li><a href="super_admin_dashboard.php?page=register_tenant">🏢 Register Tenant</a></li>
+               <li><a href="super_admin_dashboard.php?page=tenant_list">📄 Tenant List</a></li>
+                <li><a href="super_admin_dashboard.php?page=manage_users">👥 Manage Users</a></li>
+                <li><a href="../logout.php">🚪 Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+        <?php
+        if ($page === 'register_tenant') {
+            include 'register_tenant.php';
+        } elseif ($page === 'tenant_list') {
+    include 'tenant_list.php';
+    }
+        elseif ($page === 'manage_users') {
+            include 'manage_users.php';
+        } else {
+            echo "<h1>📊 Super Admin Dashboard</h1><p>Use the side menu to manage tenants and users.</p>";
+        }
+        ?>
+    </main>
+</div>
+
 </body>
 </html>

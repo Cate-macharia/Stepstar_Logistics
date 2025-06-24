@@ -87,7 +87,7 @@ $result = mysqli_query($conn, $query);
                     <?= $row['paid'] ? '✔ Paid' : '💰 Mark Paid' ?>
                 </button>
             </td>
-            <td><a href="edit-order.php?id=<?= $row['id'] ?>">✏️</a></td>
+            <td><a href="dashboard-manager.php?page=edit_order&id=<?= $row['id'] ?>">✏️</a></td>
             <td>
                 <?php 
                 $invoicePath = "../invoices/invoice_{$row['shipment_number']}.pdf";

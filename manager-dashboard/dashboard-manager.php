@@ -21,7 +21,11 @@ $page = $_GET['page'] ?? 'home';
 
 <div class="wrapper">
     <aside class="sidebar">
-        <h2>🚛 Stepstar</h2>
+        <div style="text-align: center; padding: 0; background: transparent; margin: 20px auto; width: 130px;">
+  <img src="../images/flex-logo.jpg" alt="Flexbyte Logo" style="width: 120px; height: auto; display: block; margin: 0 auto; border-radius: 0; box-shadow: none;">
+</div>
+
+
         <nav>
             <ul>
                 <li><a href="dashboard-manager.php?page=new-orders"> 📦 New Orders</a></li>
@@ -55,6 +59,9 @@ $page = $_GET['page'] ?? 'home';
                 case 'view_orders':
                     include 'view_orders.php';
                     break;
+                 case 'edit_order': // ✅ ADD THIS
+                      include 'edit-order.php';
+                      break;
                 case 'manage-drivers':
                     include 'manage-drivers.php';
                     break;
@@ -76,6 +83,7 @@ $page = $_GET['page'] ?? 'home';
                     case 'driver-salary':
                        include 'driver-salary.php';
                        break;
+                    
                 default:
                     echo "<h1>📊 Welcome to your Manager Dashboard</h1>
                           <p>Select an option from the left sidebar to begin.</p>";

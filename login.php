@@ -22,17 +22,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user = mysqli_fetch_assoc($result);
 
     if ($user && $password === $user['password']) {
-        $_SESSION['user']['tenant_id'] = $user['tenant_id'];
-        
-        if ($user['role'] === 'DRIVER') {
-            header("Location: dashboard-driver.php");
-        } elseif ($user['role'] === 'MANAGER') {
-            header("Location: manager-dashboard/dashboard-manager.php");
-        } elseif ($user['role'] === 'SUPER_ADMIN') {
-            header("Location: super_admin_dashboard.php");
-        }
-        exit();
-    } else {
+    $_SESSION['user'] = [
+        'name' => $user['name'],
+        'email' => $user['email'],
+        'role' => $user['role'],
+        'national_id' => $user['national_id'],
+        'tenant_id' => $user['tenant_id'] ?? null
+    ];
+
+    if ($user['role'] === 'DRIVER') {
+        header("Location: dashboard-driver.php");
+    } elseif ($user['role'] === 'MANAGER') {
+        header("Location: manager-dashboard/dashboard-manager.php");
+    } elseif ($user['role'] === 'SUPER_ADMIN') {
+        header("Location: super-admin/super_admin_dashboard.php");
+    }
+    exit();
+}
+else {
         $message = "<p style='color: red; text-align:center;'>❌ Invalid name or password!</p>";
     }
 }

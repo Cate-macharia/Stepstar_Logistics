@@ -23,7 +23,7 @@ body, html {
 /* Sidebar styles */
 .sidebar {
   width: 220px;
-  background: linear-gradient(180deg, #0a0a23, #1e1e3f);
+  background: #146670; /* Changed to bright cyan */
   color: #ffffff;
   padding: 20px;
   position: sticky;
@@ -31,6 +31,7 @@ body, html {
   height: 100vh;
   overflow-y: auto;
 }
+
 
 .sidebar h2 {
   text-align: center;
@@ -100,3 +101,17 @@ body, html {
 .top-actions a:hover {
   text-decoration: underline;
 }
+.logo-container {
+    text-align: center;
+    padding: 10px 0;
+}
+
+
+.sidebar-logo {
+    width: 120px;       /* fixed reasonable width */
+    height: auto;
+    border-radius: 6px;
+    display: block;
+    margin: 0 auto;
+}
+

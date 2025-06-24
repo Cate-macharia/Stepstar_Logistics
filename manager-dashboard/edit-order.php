@@ -1,11 +1,11 @@
 <?php
-
 $order_id = $_GET['id'] ?? null;
 if (!$order_id) {
     die("❌ No order ID provided.");
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    include '../includes/db.php';
     $shipment_number = $_POST['shipment_number'];
     $customer_source = $_POST['customer_source'];
     $pickup_date = $_POST['pickup_date'];
@@ -24,13 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute();
 
     echo "<p style='color:green;'>✅ Order updated successfully.</p>";
-    echo "<a href='dashboard-manager.php?page=view_orders'>⬅️ Back to Orders</a>";
-    exit;
+    echo "<a href='dashboard-manager.php?page=view_orders' style='color:white;background:green;padding:6px 12px;border-radius:4px;text-decoration:none;'>⬅ Back to Orders</a>";
+    return;
 }
 
+include '../includes/db.php';
 $query = $conn->query("SELECT * FROM shipments WHERE id = $order_id");
 $data = $query->fetch_assoc();
 ?>
+
+<a href="dashboard-manager.php?page=view_orders" style="color: white; background: #007bff; padding: 6px 12px; border-radius: 4px; text-decoration: none;">⬅ Back to Orders</a>
 
 <h2>✏️ Edit Order</h2>
 <form method="POST">
