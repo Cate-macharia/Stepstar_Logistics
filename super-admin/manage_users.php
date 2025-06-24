@@ -175,14 +175,22 @@ button {
     margin-top: 30px;
     border-collapse: collapse;
     text-align: left;
-}
-
-.manage-users-container th, .manage-users-container td {
-    border: 1px solid #ddd;
-    padding: 10px;
+    background: white; /* Ensure full table background */
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .manage-users-container th {
     background: #f2f2f2;
+    color: #000;
 }
+
+.manage-users-container tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.manage-users-container tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
 </style>

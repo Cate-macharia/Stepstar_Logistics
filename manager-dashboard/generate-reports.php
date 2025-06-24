@@ -1,15 +1,30 @@
 <?php 
 require_once __DIR__ . '/../vendor/autoload.php';
 include '../includes/db.php';
+session_start();
 
 $type = $_GET['type'] ?? '';
 $status = $_GET['status'] ?? '';
+$tenant_id = $_SESSION['user']['tenant_id'] ?? null;
+
+// Get tenant profile
+$tenantRes = $conn->query("SELECT * FROM tenants WHERE id = $tenant_id");
+$tenant = $tenantRes->fetch_assoc();
+$logo = $tenant['logo_url'] ?? '../images/default-logo.png';
+$business_name = $tenant['business_name'] ?? 'Your Business';
+$phone = $tenant['phone_number'] ?? '';
+$address = $tenant['address'] ?? '';
+$footer_note = $tenant['invoice_footer'] ?? '';
 
 $mpdf = new \Mpdf\Mpdf();
-$mpdf->SetTitle("Stepstar Logistics Report");
+$mpdf->SetTitle("$business_name Report");
+
 $html = "<div style='font-family:Arial,sans-serif;'>
-    <img src='../images/LOGISTICS LOGO-1.png' height='80'>
-   <h2 style='color:#005baa; text-align: center;'>STEPSTAR LOGISTICS LTD - Report</h2>
+    <div style='text-align:center;'>
+        <img src='$logo' height='60'><br>
+        <h2 style='color:#005baa;'>$business_name</h2>
+        <p>$address<br>📞 $phone</p>
+    </div>
     <hr>
 ";
 
@@ -112,6 +127,8 @@ elseif ($type === 'profit') {
     $html .= "<p style='color:red;'>❌ Invalid report type selected.</p>";
 }
 
-$html .= "</div>";
+$html .= "<hr><div style='text-align:center; font-size:13px; margin-top:20px;'>"
+      . nl2br($footer_note) . "</div></div>";
+
 $mpdf->WriteHTML($html);
-$mpdf->Output("Stepstar_Report.pdf", \Mpdf\Output\Destination::INLINE);
+$mpdf->Output("{$business_name}_Report.pdf", \Mpdf\Output\Destination::INLINE);
