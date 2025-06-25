@@ -1,7 +1,6 @@
 <?php
 include '../includes/db.php';
 
-$tenant_id = $_SESSION['user']['tenant_id']; // ✅ Add this
 $success = $error = "";
 
 // Handle addition
@@ -19,9 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_vehicle'])) {
         if ($check->num_rows > 0) {
             $error = "duplicate";
         } else {
-           $stmt = $conn->prepare("INSERT INTO vehicles (vehicle_reg, vehicle_type, capacity, tenant_id) VALUES (?, ?, ?, ?)");
-           $stmt->bind_param("ssdi", $reg, $type, $capacity, $tenant_id);
-
+            $stmt = $conn->prepare("INSERT INTO vehicles (vehicle_reg, vehicle_type, capacity) VALUES (?, ?, ?)");
+            $stmt->bind_param("ssd", $reg, $type, $capacity);
             if ($stmt->execute()) {
                 $success = "✅ Vehicle added successfully.";
             } else {
@@ -38,7 +36,7 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     exit();
 }
 
-$vehicles = $conn->query("SELECT * FROM vehicles WHERE tenant_id = $tenant_id ORDER BY created_at DESC");
+$vehicles = $conn->query("SELECT * FROM vehicles ORDER BY created_at DESC");
 ?>
 
 <style>

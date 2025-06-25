@@ -1,19 +1,16 @@
 <?php
-session_start();
 include '../includes/db.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 $success = false;
-$tenant_id = $_SESSION['user']['tenant_id'];
 
-$vehicles = $conn->query("SELECT id, vehicle_reg FROM vehicles WHERE tenant_id = $tenant_id");
+$vehicles = $conn->query("SELECT vehicle_reg FROM vehicles ORDER BY vehicle_reg ASC");
 $vehicleOptions = "";
-if ($vehicles) {
-    while ($v = $vehicles->fetch_assoc()) {
-        $vehicleOptions .= "<option value=\"{$v['vehicle_reg']}\">{$v['vehicle_reg']}</option>";
-    }
+while ($v = $vehicles->fetch_assoc()) {
+    $vehicleOptions .= "<option value=\"{$v['vehicle_reg']}\">{$v['vehicle_reg']}</option>";
 }
-$drivers = $conn->query("SELECT national_id, name FROM users WHERE role = 'DRIVER' AND tenant_id = $tenant_id");
+
+$drivers = $conn->query("SELECT name, national_id FROM users WHERE role = 'DRIVER' ORDER BY name ASC");
 $driverOptions = "";
 while ($d = $drivers->fetch_assoc()) {
     $driverOptions .= "<option value=\"{$d['national_id']}\">{$d['name']}</option>";
@@ -72,30 +69,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $amount = $net_weight * $rate_with_vat;
         $status = 'Pending';
 
-       $sql = "INSERT INTO shipments (
+        $sql = "INSERT INTO shipments (
                     driver_id, shipment_number, customer_source, pickup_date,
                     from_location, to_location, vehicle_reg, net_weight,
-                    distance_km, rate_per_tonne, vat_percent, amount, status, tenant_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    distance_km, rate_per_tonne, vat_percent, amount, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             die("❌ Insert failed: " . $conn->error);
         }
 
-       
-        $stmt->bind_param("sssssssddddssi",
+        $stmt->bind_param("sssssssddddds",
             $driver_id, $shipment_number, $customer_source, $shipment_date,
             $from_location, $to_location, $vehicle_reg, $net_weight,
-            $distance_km, $base_rate, $vat_percent, $amount, $status, $tenant_id
+            $distance_km, $base_rate, $vat_percent, $amount, $status
         );
-
           // Automatically add millage fee to expenses
  // Automatically add millage fee to expenses
- $millage_fee = 1000; // fixed amount per trip
- $millage_desc = "Trip on $shipment_date - Auto-recorded";
- $millage_stmt = $conn->prepare("INSERT INTO expenses (type, specific_type, description, amount, driver_id, tenant_id) VALUES ('driver', 'Millage Fee', ?, ?, ?, ?)");  $millage_stmt->bind_param("sdii", $millage_desc, $millage_fee, $driver_id, $tenant_id);
- $millage_stmt->execute();
+$millage_fee = 1000; // fixed amount per trip
+$millage_desc = "Trip on $shipment_date - Auto-recorded";
+$millage_stmt = $conn->prepare("
+    INSERT INTO expenses (type, specific_type, description, amount, driver_id)
+    VALUES ('driver', 'Millage Fee', ?, ?, ?)
+");
+$millage_stmt->bind_param("sdi", $millage_desc, $millage_fee, $driver_id);
+$millage_stmt->execute();
         $stmt->execute();
 
         $mpdf = new \Mpdf\Mpdf(['default_font' => 'sans-serif']);
