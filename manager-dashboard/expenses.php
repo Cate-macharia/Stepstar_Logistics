@@ -2,6 +2,7 @@
 include '../includes/db.php';
 
 $success = $error = "";
+$tenant_id = $_SESSION['user']['tenant_id']; // ✅ Ensure tenant context
 $type = $_GET['type'] ?? '';
 $vehicle_id = $_GET['vehicle_id'] ?? null;
 $driver_id = $_GET['driver_id'] ?? null;
@@ -18,9 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
     $vehicle_id = !empty($_POST['vehicle_id']) ? intval($_POST['vehicle_id']) : null;
     $driver_id  = !empty($_POST['driver_id'])  ? intval($_POST['driver_id']) : null;
 
-if ($amount > 0) {
-    $stmt = $conn->prepare("INSERT INTO expenses (type, specific_type, description, amount, vehicle_id, driver_id) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssddi", $type, $specific_type, $description, $amount, $vehicle_id, $driver_id);
+    if ($amount > 0) {
+        $stmt = $conn->prepare("INSERT INTO expenses (type, specific_type, description, amount, vehicle_id, driver_id, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssddii", $type, $specific_type, $description, $amount, $vehicle_id, $driver_id, $tenant_id);
         if ($stmt->execute()) {
             header("Location: dashboard-manager.php?page=expenses&success=1&filter=$filter&from=$from&to=$to");
             exit();
@@ -36,21 +37,23 @@ if (isset($_GET['success'])) {
     $success = "✅ Expense recorded.";
 }
 
-$whereParts = [];
+// Filtering
+$whereParts = ["e.tenant_id = $tenant_id"]; // ✅ Always limit to tenant
 if ($vehicle_id) {
     $whereParts[] = "vehicle_id = " . intval($vehicle_id);
 }
 if ($filter === 'today') {
-    $whereParts[] = "DATE(created_at) = CURDATE()";
+    $whereParts[] = "DATE(e.created_at) = CURDATE()";
 } elseif ($filter === 'week') {
-    $whereParts[] = "YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)";
+    $whereParts[] = "YEARWEEK(e.created_at, 1) = YEARWEEK(CURDATE(), 1)";
 } elseif ($filter === 'month') {
-    $whereParts[] = "MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())";
+    $whereParts[] = "MONTH(e.created_at) = MONTH(CURDATE()) AND YEAR(e.created_at) = YEAR(CURDATE())";
 } elseif ($filter === 'range' && $from && $to) {
-    $whereParts[] = "DATE(created_at) BETWEEN '$from' AND '$to'";
+    $whereParts[] = "DATE(e.created_at) BETWEEN '$from' AND '$to'";
 }
-$whereClause = count($whereParts) ? implode(" AND ", $whereParts) : "1";
+$whereClause = implode(" AND ", $whereParts);
 
+// Fetch expenses
 $expenses = $conn->query("
     SELECT e.*, u.name AS driver_name, v.vehicle_reg
     FROM expenses e
@@ -61,15 +64,17 @@ $expenses = $conn->query("
 ");
 
 
-
-$totalResult = $conn->query("SELECT SUM(amount) as total FROM expenses WHERE $whereClause");
+// Total
+$totalResult = $conn->query("SELECT SUM(amount) as total FROM expenses e WHERE $whereClause");
 $totalRow = $totalResult->fetch_assoc();
 $totalAmount = $totalRow['total'] ?? 0;
 
-$vehicles = $conn->query("SELECT id, vehicle_reg FROM vehicles");
-$drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRIVER'");
+// Fetch tenant-specific vehicles and drivers
+$vehicles = $conn->query("SELECT id, vehicle_reg FROM vehicles WHERE tenant_id = $tenant_id");
+$drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRIVER' AND tenant_id = $tenant_id");
 ?>
 
+<!-- FORM -->
 <form method="POST" class="expense-form">
     <div class="form-grid">
         <div class="form-group">
@@ -96,7 +101,9 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
             <select name="driver_id">
                 <option value="">Select Driver</option>
                 <?php while($d = $drivers->fetch_assoc()): ?>
-                    <option value="<?= $d['id'] ?>" <?= ($driver_id == $d['id']) ? 'selected' : '' ?>><?= $d['name'] ?> (ID: <?= $d['national_id'] ?>)</option>
+                    <option value="<?= $d['id'] ?>" <?= ($driver_id == $d['id']) ? 'selected' : '' ?>>
+                        <?= $d['name'] ?> (ID: <?= $d['national_id'] ?>)
+                    </option>
                 <?php endwhile; ?>
             </select>
         </div>
@@ -124,6 +131,7 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
     </div>
 </form>
 
+<!-- TABLE -->
 <h2>📋 Expense Records</h2>
 <table class="styled-table">
     <thead>
@@ -141,16 +149,15 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
     <tbody>
         <?php $i = 1; while ($exp = $expenses->fetch_assoc()): ?>
         <tr>
-           <td><?= $i++ ?></td>
-           <td><?= htmlspecialchars($exp['type']) ?></td>
-           <td><?= htmlspecialchars($exp['specific_type']) ?></td>
-           <td><?= htmlspecialchars($exp['description']) ?></td>
-           <td><?= !empty($exp['vehicle_reg']) ? $exp['vehicle_reg'] : '-' ?></td>
-           <td><?= htmlspecialchars($exp['driver_name'] ?? '-') ?></td>
-           <td>KES <?= number_format($exp['amount'], 2) ?></td>
-           <td><?= $exp['created_at'] ?></td>
-       </tr>
-
+            <td><?= $i++ ?></td>
+            <td><?= htmlspecialchars($exp['type']) ?></td>
+            <td><?= htmlspecialchars($exp['specific_type']) ?></td>
+            <td><?= htmlspecialchars($exp['description']) ?></td>
+            <td><?= !empty($exp['vehicle_reg']) ? $exp['vehicle_reg'] : '-' ?></td>
+            <td><?= htmlspecialchars($exp['driver_name'] ?? '-') ?></td>
+            <td>KES <?= number_format($exp['amount'], 2) ?></td>
+            <td><?= $exp['created_at'] ?></td>
+        </tr>
         <?php endwhile; ?>
         <?php if ($expenses->num_rows === 0): ?>
         <tr><td colspan="8" style="color:red; text-align:center;">⚠️ No expenses found.</td></tr>
@@ -163,6 +170,7 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
         </tr>
     </tfoot>
 </table>
+
 
 <!-- Styling -->
 <style>
@@ -210,7 +218,7 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
         width: 100%;
         border-collapse: collapse;
         font-size: 14px;
-        margin-top: 10px;
+        margin-top: 10px;#005f
     }
 
     .styled-table thead th {
@@ -218,7 +226,7 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
         color: #ffffff;
         padding: 12px;
         text-align: left;
-        border-bottom: 2px solid #005fa3;
+        border-bottom: 2px solid a3;
     }
 
     .styled-table tbody td {
@@ -227,7 +235,7 @@ $drivers = $conn->query("SELECT id, name, national_id FROM users WHERE role='DRI
     }
 
     .styled-table tfoot th {
-        background-color:rgb(91, 15, 105);
+        background-color:#0077cc;
         padding: 14px;
         text-align: center;
         font-weight: bold;

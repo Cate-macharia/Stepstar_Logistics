@@ -67,7 +67,7 @@ $vehicles = $conn->query("SELECT * FROM vehicles WHERE tenant_id = $tenant_id OR
         text-align: left;
     }
     .styled-table th {
-        background-color: #f4f4f4;
+        background-color: #0077cc;
         color: #333;
     }
     .styled-table tr:hover {

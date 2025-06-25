@@ -1,22 +1,24 @@
 <?php
 include '../includes/db.php';
 
+$tenant_id = $_SESSION['user']['tenant_id']; // ✅ Ensure tenant isolation
+
 // Default filters
 $filter = $_GET['filter'] ?? 'month';
 $from = $_GET['from'] ?? '';
 $to = $_GET['to'] ?? '';
 
 // Build SQL filter
-$whereClause = "1";
+$whereClause = "tenant_id = $tenant_id";
 $dateGroup = "DATE(created_at)";
 if ($filter === 'today') {
-    $whereClause = "DATE(created_at) = CURDATE()";
+    $whereClause .= " AND DATE(created_at) = CURDATE()";
 } elseif ($filter === 'week') {
-    $whereClause = "YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)";
+    $whereClause .= " AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)";
 } elseif ($filter === 'month') {
-    $whereClause = "MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())";
+    $whereClause .= " AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())";
 } elseif ($filter === 'range' && $from && $to) {
-    $whereClause = "DATE(created_at) BETWEEN '$from' AND '$to'";
+    $whereClause .= " AND DATE(created_at) BETWEEN '$from' AND '$to'";
 }
 
 // Fetch income
@@ -29,14 +31,14 @@ $expenses = $expenseRes->fetch_assoc()['total_expense'] ?? 0;
 
 $profit = $income - $expenses;
 
-// Fetch detailed expense breakdown
+// Expense breakdown
 $expenseDetails = $conn->query("SELECT type, SUM(amount) as total FROM expenses WHERE $whereClause GROUP BY type");
 $expenseData = [];
 while($row = $expenseDetails->fetch_assoc()) {
     $expenseData[] = $row;
 }
 
-// Fetch daily totals for line chart
+// Line chart data
 $lineDataQuery = "
     SELECT d.report_date,
            IFNULL(s.total_income, 0) AS income,
@@ -65,7 +67,7 @@ while($row = $lineResult->fetch_assoc()) {
     $lineExpense[] = $row['expense'];
 }
 
-// Fetch shipment status breakdown
+// Shipment status
 $statusResult = $conn->query("SELECT status, COUNT(*) as total FROM shipments WHERE $whereClause GROUP BY status");
 $statusSummary = [
     'Total Orders' => 0,
@@ -78,21 +80,22 @@ while ($row = $statusResult->fetch_assoc()) {
     $statusSummary['Total Orders'] += $row['total'];
 }
 
-// Fetch top routes
+// Top routes
 $topRoutesResult = $conn->query("SELECT CONCAT(from_location, ' → ', to_location) AS route, COUNT(*) as trips FROM shipments WHERE $whereClause GROUP BY route ORDER BY trips DESC LIMIT 5");
 $topRoutes = [];
 while($row = $topRoutesResult->fetch_assoc()) {
     $topRoutes[] = $row;
 }
 
-// Fetch most profitable vehicle
+// Most profitable vehicle
 $vehicleResult = $conn->query("SELECT vehicle_reg, SUM(amount) as total_income FROM shipments WHERE $whereClause GROUP BY vehicle_reg ORDER BY total_income DESC LIMIT 1");
 $topVehicle = $vehicleResult->fetch_assoc();
 
-// Fetch most frequent customer
+// Top customer
 $topCustomerRes = $conn->query("SELECT customer_source, COUNT(*) AS orders FROM shipments WHERE $whereClause GROUP BY customer_source ORDER BY orders DESC LIMIT 1");
 $topCustomer = $topCustomerRes->fetch_assoc();
 ?>
+
 
 <!DOCTYPE html>
 <html>
@@ -102,7 +105,7 @@ $topCustomer = $topCustomerRes->fetch_assoc();
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .card, .summary-card {
-            background:rgb(117, 117, 170); padding: 20px; margin: 10px 0;
+            background:#0077cc; padding: 20px; margin: 10px 0;
             border-radius: 8px; text-align: center;
             font-size: 18px; font-weight: bold;
         }
@@ -202,10 +205,6 @@ $topCustomer = $topCustomerRes->fetch_assoc();
         <div class="chart-box">
             <h3>Expense Breakdown</h3>
             <canvas id="expenseChart"></canvas>
-        </div>
-        <div class="chart-box">
-            <h3>Income vs Expenses</h3>
-            <canvas id="lineChart"></canvas>
         </div>
     </div>
 

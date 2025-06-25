@@ -7,6 +7,8 @@ $type = $_GET['type'] ?? '';
 $status = $_GET['status'] ?? '';
 $tenant_id = $_SESSION['user']['tenant_id'] ?? null;
 
+if (!$tenant_id) die("❌ Tenant ID missing.");
+
 // Get tenant profile
 $tenantRes = $conn->query("SELECT * FROM tenants WHERE id = $tenant_id");
 $tenant = $tenantRes->fetch_assoc();
@@ -18,42 +20,36 @@ $footer_note = $tenant['invoice_footer'] ?? '';
 
 $mpdf = new \Mpdf\Mpdf();
 $mpdf->SetTitle("$business_name Report");
-
 $html = "<div style='font-family:Arial,sans-serif;'>
-    <div style='text-align:center;'>
-        <img src='$logo' height='60'><br>
-        <h2 style='color:#005baa;'>$business_name</h2>
-        <p>$address<br>📞 $phone</p>
-    </div>
+    <img src='$logo' height='60'><br>
+    <h2 style='color:#005baa;'>$business_name - Report</h2>
+    <p>$address<br>📞 $phone</p>
     <hr>
 ";
 
 $statusTypes = ['Pending', 'In Progress', 'Delivered', 'Paid', 'Unpaid', 'All'];
 
 if ($type === 'orders' && in_array($status, $statusTypes)) {
-    $filterSQL = "";
-
-    if ($status === 'Paid') {
-        $filterSQL = "WHERE s.paid = 1";
-        $html .= "<h3>✅ Paid Orders Report</h3>";
-    } elseif ($status === 'Unpaid') {
-        $filterSQL = "WHERE s.paid = 0";
-        $html .= "<h3>💰 Unpaid Orders Report</h3>";
-    } elseif ($status === 'All') {
-        $filterSQL = "";
-        $html .= "<h3>📋 All Orders Report</h3>";
-    } else {
-        $filterSQL = "WHERE s.status = '" . $conn->real_escape_string($status) . "'";
-        $html .= "<h3>📦 Orders Report - Status: " . $status . "</h3>";
-    }
+    $html .= "<h3>📦 Orders Report - Status: " . ($status === 'All' ? "All" : $status) . "</h3>";
 
     $query = "SELECT s.*, u.name AS driver_name 
               FROM shipments s 
               LEFT JOIN users u ON s.driver_id = u.national_id 
-              $filterSQL 
+              WHERE s.tenant_id = ?
+              " . ($status === 'Paid' ? " AND s.paid = 1" : ($status === 'Unpaid' ? " AND s.paid = 0" : ($status !== 'All' ? " AND s.status = ?" : ""))) . "
               ORDER BY s.pickup_date DESC";
 
-    $result = $conn->query($query);
+    $stmt = $conn->prepare($query);
+    if ($status === 'All') {
+        $stmt->bind_param("i", $tenant_id);
+    } elseif ($status === 'Paid' || $status === 'Unpaid') {
+        $stmt->bind_param("i", $tenant_id);
+    } else {
+        $stmt->bind_param("is", $tenant_id, $status);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     $html .= "<table width='100%' border='1' cellspacing='0' cellpadding='5' style='border-collapse: collapse;'>
         <thead><tr style='background:#f2f2f2;'>
@@ -81,13 +77,17 @@ if ($type === 'orders' && in_array($status, $statusTypes)) {
     <p><strong>Total Amount: KES " . number_format($total, 2) . "</strong></p>";
 }
 elseif ($type === 'expenses') {
-    $html .= "<h3>Expenses Report</h3>";
+    $html .= "<h3>💸 Expenses Report</h3>";
     $query = "SELECT e.*, v.vehicle_reg, u.name AS driver_name
               FROM expenses e
               LEFT JOIN vehicles v ON e.vehicle_id = v.id
               LEFT JOIN users u ON e.driver_id = u.id
+              WHERE e.tenant_id = ?
               ORDER BY e.created_at DESC";
-    $result = $conn->query($query);
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $tenant_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     $html .= "<table width='100%' border='1' cellspacing='0' cellpadding='5' style='border-collapse: collapse;'>
     <thead><tr style='background:#f2f2f2;'>
@@ -109,26 +109,29 @@ elseif ($type === 'expenses') {
         $total += $row['amount'];
         $i++;
     }
+
     $html .= "</tbody></table>
     <p><strong>Total Expenses: KES " . number_format($total, 2) . "</strong></p>";
 }
 elseif ($type === 'profit') {
-    $incomeRes = $conn->query("SELECT SUM(amount) AS total_income FROM shipments");
-    $income = $incomeRes->fetch_assoc()['total_income'] ?? 0;
-    $expenseRes = $conn->query("SELECT SUM(amount) AS total_expense FROM expenses");
-    $expenses = $expenseRes->fetch_assoc()['total_expense'] ?? 0;
+    $stmt1 = $conn->prepare("SELECT SUM(amount) AS total_income FROM shipments WHERE tenant_id = ?");
+    $stmt2 = $conn->prepare("SELECT SUM(amount) AS total_expense FROM expenses WHERE tenant_id = ?");
+    $stmt1->bind_param("i", $tenant_id);
+    $stmt2->bind_param("i", $tenant_id);
+    $stmt1->execute(); $stmt2->execute();
+    $income = $stmt1->get_result()->fetch_assoc()['total_income'] ?? 0;
+    $expenses = $stmt2->get_result()->fetch_assoc()['total_expense'] ?? 0;
     $profit = $income - $expenses;
 
-    $html .= "<h3>Profit Report</h3>
+    $html .= "<h3>📊 Profit Report</h3>
     <p><strong>Total Income:</strong> KES " . number_format($income, 2) . "</p>
     <p><strong>Total Expenses:</strong> KES " . number_format($expenses, 2) . "</p>
     <p><strong>Profit:</strong> KES " . number_format($profit, 2) . "</p>";
-} else {
+}
+else {
     $html .= "<p style='color:red;'>❌ Invalid report type selected.</p>";
 }
 
-$html .= "<hr><div style='text-align:center; font-size:13px; margin-top:20px;'>"
-      . nl2br($footer_note) . "</div></div>";
-
+$html .= "</div>";
 $mpdf->WriteHTML($html);
 $mpdf->Output("{$business_name}_Report.pdf", \Mpdf\Output\Destination::INLINE);

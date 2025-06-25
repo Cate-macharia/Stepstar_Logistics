@@ -1,5 +1,5 @@
 <?php
-session_start();
+
 include '../includes/db.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -93,9 +93,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           // Automatically add millage fee to expenses
  // Automatically add millage fee to expenses
  $millage_fee = 1000; // fixed amount per trip
- $millage_desc = "Trip on $shipment_date - Auto-recorded";
- $millage_stmt = $conn->prepare("INSERT INTO expenses (type, specific_type, description, amount, driver_id, tenant_id) VALUES ('driver', 'Millage Fee', ?, ?, ?, ?)");  $millage_stmt->bind_param("sdii", $millage_desc, $millage_fee, $driver_id, $tenant_id);
- $millage_stmt->execute();
+$millage_desc = "Trip on $shipment_date - Auto-recorded";
+
+// 🔍 Get vehicle_id from vehicle_reg for reference
+$vehicle_id = null;
+$vehStmt = $conn->prepare("SELECT id FROM vehicles WHERE vehicle_reg = ? AND tenant_id = ?");
+$vehStmt->bind_param("si", $vehicle_reg, $tenant_id);
+$vehStmt->execute();
+$vehResult = $vehStmt->get_result();
+if ($veh = $vehResult->fetch_assoc()) {
+    $vehicle_id = $veh['id'];
+}
+$vehStmt->close();
+
+// ✅ Insert millage fee expense with vehicle_id
+$millage_stmt = $conn->prepare("
+    INSERT INTO expenses (type, specific_type, description, amount, driver_id, vehicle_id, tenant_id) 
+    VALUES ('driver', 'Millage Fee', ?, ?, ?, ?, ?)
+");
+$millage_stmt->bind_param("sdiis", $millage_desc, $millage_fee, $driver_id, $vehicle_id, $tenant_id);
+$millage_stmt->execute();
+
         $stmt->execute();
 
         $mpdf = new \Mpdf\Mpdf(['default_font' => 'sans-serif']);

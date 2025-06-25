@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Upload logo if provided
     if (isset($_FILES['logo']) && $_FILES['logo']['error'] === 0) {
-        $uploadDir = '../storage/logos/';
+        $uploadDir = '../images';
         $logoName = time() . '_' . basename($_FILES['logo']['name']);
         $logoPath = $uploadDir . $logoName;
         move_uploaded_file($_FILES['logo']['tmp_name'], $logoPath);
